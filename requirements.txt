@@ -1,0 +1,5 @@
+numpy
+pillow
+rich
+keyboard
+screen_recorder_sdk
