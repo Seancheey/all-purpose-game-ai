@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from screeninfo import screeninfo
 from typing import List, Tuple, Set
 from ratelimit import rate_limited, sleep_and_retry
+from data_format import keys, img_size
 
 
 @dataclass
@@ -29,18 +30,19 @@ class ScreenEvent:
 @dataclass
 class DatasetItem:
     screen: np.array
-    key_codes: List[bool]
+    key_codes: List[str]
 
 
 @dataclass
 class Recorder:
     save_dir: str
     fps: int = 60
-    screen_res: Tuple[int] = (192, 108)
-    recording_keys: Set[str] = field(default_factory=lambda: {'w', 'a', 's', 'd'})
+    screen_res: Tuple[int] = img_size
+    recording_keys: Set[str] = field(default_factory=lambda: keys.copy())
     exit_key: str = 'q'
 
     def record(self):
+        start_time = datetime.now()
         stop_event = Event()
         with ThreadPoolExecutor(3) as pool:
             screen_future = pool.submit(self.__record_screen, stop_event)
@@ -49,7 +51,7 @@ class Recorder:
 
             screen_data = screen_future.result()
             keyboard_data = keyboard_future.result()
-        self.__save_records(screen_data, keyboard_data)
+        self.__save_records(keyboard_data, screen_data, start_time.strftime('%Y%m%d-%H%M%S'))
 
     def __listen_to_stop_event(self, stop_event):
         keyboard.wait(self.exit_key)
@@ -100,8 +102,29 @@ class Recorder:
         cv2.destroyAllWindows()
         return screens
 
-    def __save_records(self, keys, screens):
-        pass
+    def __save_records(self, key_sequence: List[KeyEvent], screen_sequence: List[ScreenEvent], filename_suffix):
+        ki, si = 0, 0
+        cur_keys = set()
+        data_out = []
+        while ki < len(key_sequence) and si < len(screen_sequence):
+            key_event = key_sequence[ki]
+            screen_event = screen_sequence[si]
+            if key_event.timestamp < screen_event.timestamp:
+                if key_event.down:
+                    cur_keys.add(key_event.key_code)
+                else:
+                    cur_keys.remove(key_event.key_code)
+                ki += 1
+            else:
+                data_out.append(DatasetItem(
+                    screen=screen_event.screen,
+                    key_codes=list(cur_keys)
+                ))
+                si += 1
+        np.save(os.path.join(self.save_dir, f'screen-{filename_suffix}'),
+                np.array(list(map(lambda x: x.screen, data_out))))
+        np.save(os.path.join(self.save_dir, f'key-{filename_suffix}'),
+                np.array(list(map(lambda x: x.key_codes, data_out)), dtype=object))
 
 
 def main():
