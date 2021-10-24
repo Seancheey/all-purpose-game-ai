@@ -10,7 +10,6 @@ from mss import mss
 from dataclasses import dataclass, field
 from screeninfo import screeninfo
 from typing import List, Tuple, Set
-from rich import print
 from ratelimit import rate_limited, sleep_and_retry
 
 
@@ -18,7 +17,19 @@ from ratelimit import rate_limited, sleep_and_retry
 class KeyEvent:
     key_code: str
     timestamp: float
-    press_down: bool
+    down: bool
+
+
+@dataclass
+class ScreenEvent:
+    screen: np.array
+    timestamp: float
+
+
+@dataclass
+class DatasetItem:
+    screen: np.array
+    key_codes: List[bool]
 
 
 @dataclass
@@ -30,15 +41,15 @@ class Recorder:
     exit_key: str = 'q'
 
     def record(self):
-        start_time = datetime.now().timestamp()
         stop_event = Event()
-        with ThreadPoolExecutor(4) as pool:
+        with ThreadPoolExecutor(3) as pool:
             screen_future = pool.submit(self.__record_screen, stop_event)
             keyboard_future = pool.submit(self.__record_keyboard, stop_event)
             pool.submit(self.__listen_to_stop_event, stop_event).result()
 
-            screen_future.result()
-            keyboard_future.result()
+            screen_data = screen_future.result()
+            keyboard_data = keyboard_future.result()
+        self.__save_records(screen_data, keyboard_data)
 
     def __listen_to_stop_event(self, stop_event):
         keyboard.wait(self.exit_key)
@@ -47,49 +58,50 @@ class Recorder:
     def __record_keyboard(self, stop_event: Event) -> List[KeyEvent]:
         key_sequence = []
 
-        def handle_press(event: keyboard.KeyboardEvent):
-            if event.name in self.recording_keys:
-                key_sequence.append(KeyEvent(event.name, datetime.now().timestamp(), True))
-                print(event.name)
+        def handle_event(event: keyboard.KeyboardEvent):
+            key_sequence.append(
+                KeyEvent(event.name, datetime.now().timestamp(), event.event_type == 'down'))
 
-        def handle_release(event: keyboard.KeyboardEvent):
-            if event.name in self.recording_keys:
-                key_sequence.append(KeyEvent(event.name, datetime.now().timestamp(), False))
-
-        keyboard.on_press(handle_press)
-        keyboard.on_release(handle_release)
+        for key in self.recording_keys:
+            keyboard.hook_key(key, handle_event)
 
         stop_event.wait()
         return key_sequence
 
-    def __record_screen(self, stop_event: Event):
+    def __record_screen(self, stop_event: Event) -> List[ScreenEvent]:
         sct = mss()
         monitors = screeninfo.get_monitors()
         assert len(monitors) > 0, OSError('No Monitor Detected.')
         monitor = monitors[0]
+        down_sample_factor = monitor.width // self.screen_res[0]
+        assert monitor.height // self.screen_res[1] == down_sample_factor, f'screen mismatches ratio {self.screen_res}'
+
         bounding_box = {
             'left': monitor.x,
             'top': monitor.y,
             'width': monitor.width,
             'height': monitor.height
         }
-        down_sample_factor = monitor.width // 192
-        assert monitor.height // 108 == down_sample_factor, 'monitor is not 16:9 screen'
 
         @sleep_and_retry
         @rate_limited(1, 1 / self.fps)
         def capture():
-            sct_img = np.array(sct.grab(bounding_box))[::down_sample_factor, ::down_sample_factor]
-            cv2.imshow('screen', sct_img)
+            # noinspection PyTypeChecker
+            return np.array(sct.grab(bounding_box))[::down_sample_factor, ::down_sample_factor]
+
+        screens = []
 
         while not stop_event.is_set():
-            capture()
+            img = capture()
+            cv2.imshow('screen', img)
+            screens.append(ScreenEvent(img, datetime.now().timestamp()))
             cv2.waitKey(1)
 
         cv2.destroyAllWindows()
+        return screens
 
-    def __save_records(self, key_sequence, recording):
-        np.save(os.path.join(self.save_dir, f"{self.start_time}"), np.array(key_sequence))
+    def __save_records(self, keys, screens):
+        pass
 
 
 def main():
