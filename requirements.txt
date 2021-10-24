@@ -1,5 +1,7 @@
 numpy
+screeninfo
 pillow
 rich
 keyboard
-screen_recorder_sdk
+mss
+ratelimit
