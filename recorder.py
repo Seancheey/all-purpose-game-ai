@@ -41,7 +41,8 @@ class Recorder:
     max_fps: int = 30
     screen_res: Tuple[int] = img_size
     recording_keys: Set[str] = field(default_factory=lambda: keys.copy())
-    exit_key: str = 'q'
+    exit_key: str = 'space'
+    discard_tail_sec: int = 1  # discard last N seconds of content, so that failing movement won't be learnt by model.
 
     def record(self):
         stop_event = Event()
@@ -59,6 +60,7 @@ class Recorder:
         self.__save_np_keys(dataset, folder_name)
         self.__save_np_screens(dataset, folder_name)
         self.__save_avi_video(dataset, folder_name)
+        print(f'saved data to {folder_name}\n')
 
     def __listen_to_stop_event(self, stop_event):
         keyboard.wait(self.exit_key)
@@ -120,6 +122,7 @@ class Recorder:
         ki, si = 0, 0
         cur_keys = set()
         data_out = []
+        end_timestamp = screen_sequence[-1].timestamp - self.discard_tail_sec
         while si < len(screen_sequence):
             key_event = key_sequence[ki] if ki < len(key_sequence) else None
             screen_event = screen_sequence[si]
@@ -130,6 +133,8 @@ class Recorder:
                     cur_keys.remove(key_event.key_code)
                 ki += 1
             else:
+                if screen_event.timestamp > end_timestamp:
+                    break
                 data_out.append(DatasetItem(
                     screen=screen_event.screen,
                     key_codes=list(cur_keys),
@@ -152,14 +157,15 @@ class Recorder:
         video_writer = cv2.VideoWriter(os.path.join(self.save_dir, folder, f'video.avi'),
                                        cv2.VideoWriter_fourcc(*"XVID"), avg_fps, self.screen_res)
         for item in dataset:
-            video_writer.write(cv2.cvtColor(item.screen, cv2.COLOR_BGR2RGB))
+            video_writer.write(cv2.cvtColor(item.screen, cv2.COLOR_RGBA2RGB))
         video_writer.release()
 
 
 def main():
     data_dir = os.path.join(os.getcwd(), 'data')
-    recorder = Recorder(save_dir=data_dir)
-    recorder.record()
+    while True:
+        recorder = Recorder(save_dir=data_dir)
+        recorder.record()
 
 
 if __name__ == "__main__":
