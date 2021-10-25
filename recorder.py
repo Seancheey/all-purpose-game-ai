@@ -90,8 +90,12 @@ class Recorder:
         monitors = screeninfo.get_monitors()
         assert len(monitors) > 0, OSError('No Monitor Detected.')
         monitor = monitors[0]
-        down_sample_factor = monitor.width // self.screen_res[0]
-        assert monitor.height // self.screen_res[1] == down_sample_factor, f'screen mismatches ratio {self.screen_res}'
+
+        down_sample_factor = min(monitor.width // self.screen_res[1], monitor.height // self.screen_res[1])
+        width_diff = (monitor.width - down_sample_factor*self.screen_res[0])
+        height_diff = (monitor.height - down_sample_factor*self.screen_res[1])
+        w_start, w_end = width_diff//2, monitor.width - width_diff//2
+        h_start, h_end = height_diff//2, monitor.height - height_diff//2
 
         bounding_box = {
             'left': monitor.x,
@@ -103,8 +107,9 @@ class Recorder:
         @sleep_and_retry
         @rate_limited(1, 1 / self.max_fps)
         def capture():
+            # capture screen, then down-sample + trim the sides to meet specified resolution.
             # noinspection PyTypeChecker
-            return np.array(sct.grab(bounding_box))[::down_sample_factor, ::down_sample_factor]
+            return np.array(sct.grab(bounding_box))[w_start:w_end:down_sample_factor, h_start:h_end:down_sample_factor]
 
         last_timestamp = datetime.now().timestamp()
         screens = []
