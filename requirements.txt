@@ -7,3 +7,4 @@ mss~=6.1.0
 ratelimit~=2.2.1
 opencv-python~=4.5.4.58
 sklearn
+psutil

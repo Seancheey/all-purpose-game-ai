@@ -13,6 +13,7 @@ from typing import List, Tuple, Set
 from ratelimit import rate_limited, sleep_and_retry
 from data_format import keys, img_size
 from rich.progress import Progress, TextColumn, TimeElapsedColumn
+import psutil
 
 
 @dataclass
@@ -41,7 +42,7 @@ class Recorder:
     max_fps: int = 30
     screen_res: Tuple[int] = img_size
     recording_keys: Set[str] = field(default_factory=lambda: keys.copy())
-    exit_key: str = 'space'
+    finish_record_key: str = 'space'
     discard_tail_sec: int = 3  # discard last N seconds of content, so that failing movement won't be learnt by model.
 
     def record(self):
@@ -49,7 +50,7 @@ class Recorder:
         with ThreadPoolExecutor(3) as pool:
             screen_future = pool.submit(self.__record_screen, stop_event)
             keyboard_future = pool.submit(self.__record_keyboard, stop_event)
-            pool.submit(self.__listen_to_stop_event, stop_event).result()
+            pool.submit(self.__listen_to_finish_record_event, stop_event).result()
 
             screen_data = screen_future.result()
             keyboard_data = keyboard_future.result()
@@ -67,8 +68,8 @@ class Recorder:
         self.__save_avi_video(dataset, folder_name)
         print(f'saved data to {folder_name}\n')
 
-    def __listen_to_stop_event(self, stop_event):
-        keyboard.wait(self.exit_key)
+    def __listen_to_finish_record_event(self, stop_event):
+        keyboard.wait(self.finish_record_key)
         stop_event.set()
 
     def __record_keyboard(self, stop_event: Event) -> List[KeyEvent]:
@@ -158,7 +159,7 @@ class Recorder:
 
     def __save_avi_video(self, dataset: List[DatasetItem], folder: str):
         avg_fps = len(dataset) / (dataset[-1].timestamp - dataset[0].timestamp)
-        print('average fps = ', avg_fps)
+        print('average fps =', round(avg_fps, 2))
         video_writer = cv2.VideoWriter(os.path.join(self.save_dir, folder, f'video.avi'),
                                        cv2.VideoWriter_fourcc(*"XVID"), avg_fps, self.screen_res)
         for item in dataset:
@@ -167,6 +168,8 @@ class Recorder:
 
 
 def main():
+    keyboard.add_hotkey('q', lambda: psutil.Process(os.getpid()).terminate())
+    print('start recording... (press "q" to exit, press "space" to save and start next recording)')
     data_dir = os.path.join(os.getcwd(), 'data')
     while True:
         recorder = Recorder(save_dir=data_dir)
