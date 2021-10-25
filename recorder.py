@@ -42,7 +42,7 @@ class Recorder:
     screen_res: Tuple[int] = img_size
     recording_keys: Set[str] = field(default_factory=lambda: keys.copy())
     exit_key: str = 'space'
-    discard_tail_sec: int = 1  # discard last N seconds of content, so that failing movement won't be learnt by model.
+    discard_tail_sec: int = 3  # discard last N seconds of content, so that failing movement won't be learnt by model.
 
     def record(self):
         stop_event = Event()
@@ -54,9 +54,14 @@ class Recorder:
             screen_data = screen_future.result()
             keyboard_data = keyboard_future.result()
 
+        dataset = self.__to_training_data(keyboard_data, screen_data)
+
+        if len(dataset) == 0:
+            print('skipping saving dataset due to empty content\n')
+            return
+
         folder_name = datetime.now().strftime('%Y%m%d-%H%M%S')
         os.mkdir(os.path.join(self.save_dir, folder_name))
-        dataset = self.__to_training_data(keyboard_data, screen_data)
         self.__save_np_keys(dataset, folder_name)
         self.__save_np_screens(dataset, folder_name)
         self.__save_avi_video(dataset, folder_name)
