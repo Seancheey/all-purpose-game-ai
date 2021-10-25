@@ -32,29 +32,33 @@ class ScreenEvent:
 class DatasetItem:
     screen: np.array
     key_codes: List[str]
+    timestamp: float = 0
 
 
 @dataclass
 class Recorder:
     save_dir: str
-    fps: int = 20
+    max_fps: int = 30
     screen_res: Tuple[int] = img_size
     recording_keys: Set[str] = field(default_factory=lambda: keys.copy())
     exit_key: str = 'q'
 
     def record(self):
-        folder_name = datetime.now().strftime('%Y%m%d-%H%M%S')
-        os.mkdir(os.path.join(self.save_dir, folder_name))
         stop_event = Event()
-
         with ThreadPoolExecutor(3) as pool:
-            screen_future = pool.submit(self.__record_screen, stop_event, folder_name)
+            screen_future = pool.submit(self.__record_screen, stop_event)
             keyboard_future = pool.submit(self.__record_keyboard, stop_event)
             pool.submit(self.__listen_to_stop_event, stop_event).result()
 
             screen_data = screen_future.result()
             keyboard_data = keyboard_future.result()
-        self.__save_records(keyboard_data, screen_data, folder_name)
+
+        folder_name = datetime.now().strftime('%Y%m%d-%H%M%S')
+        os.mkdir(os.path.join(self.save_dir, folder_name))
+        dataset = self.__to_training_data(keyboard_data, screen_data)
+        self.__save_np_keys(dataset, folder_name)
+        self.__save_np_screens(dataset, folder_name)
+        self.__save_avi_video(dataset, folder_name)
 
     def __listen_to_stop_event(self, stop_event):
         keyboard.wait(self.exit_key)
@@ -73,7 +77,7 @@ class Recorder:
         stop_event.wait()
         return key_sequence
 
-    def __record_screen(self, stop_event: Event, folder: str) -> List[ScreenEvent]:
+    def __record_screen(self, stop_event: Event) -> List[ScreenEvent]:
         sct = mss()
         monitors = screeninfo.get_monitors()
         assert len(monitors) > 0, OSError('No Monitor Detected.')
@@ -88,11 +92,8 @@ class Recorder:
             'height': monitor.height
         }
 
-        video_writer = cv2.VideoWriter(os.path.join(self.save_dir, folder, f'video.avi'),
-                                       cv2.VideoWriter_fourcc(*"XVID"), self.fps, self.screen_res)
-
         @sleep_and_retry
-        @rate_limited(1, 1 / self.fps)
+        @rate_limited(1, 1 / self.max_fps)
         def capture():
             # noinspection PyTypeChecker
             return np.array(sct.grab(bounding_box))[::down_sample_factor, ::down_sample_factor]
@@ -101,30 +102,28 @@ class Recorder:
         screens = []
 
         with Progress(
+                TextColumn("Video Recorder Stats:"),
                 TimeElapsedColumn(),
                 TextColumn("[progress.description]{task.fields[fps]}")
         ) as progress:
             task_id = progress.add_task('recording', fps=0)
             while not stop_event.is_set():
                 img = capture()
-                video_writer.write(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
                 timestamp = datetime.now().timestamp()
                 screens.append(ScreenEvent(img, timestamp))
-                fps = 1 / (timestamp - last_timestamp)
+                progress.update(task_id, fps=f'{round(1 / (timestamp - last_timestamp), 1)} frame per sec')
                 last_timestamp = timestamp
-                progress.update(task_id, fps=f'{round(fps, 1)} frame per sec')
 
-        video_writer.release()
         return screens
 
-    def __save_records(self, key_sequence: List[KeyEvent], screen_sequence: List[ScreenEvent], folder: str):
+    def __to_training_data(self, key_sequence: List[KeyEvent], screen_sequence: List[ScreenEvent]):
         ki, si = 0, 0
         cur_keys = set()
         data_out = []
-        while ki < len(key_sequence) and si < len(screen_sequence):
-            key_event = key_sequence[ki]
+        while si < len(screen_sequence):
+            key_event = key_sequence[ki] if ki < len(key_sequence) else None
             screen_event = screen_sequence[si]
-            if key_event.timestamp < screen_event.timestamp:
+            if key_event is not None and key_event.timestamp < screen_event.timestamp:
                 if key_event.down:
                     cur_keys.add(key_event.key_code)
                 else:
@@ -133,13 +132,28 @@ class Recorder:
             else:
                 data_out.append(DatasetItem(
                     screen=screen_event.screen,
-                    key_codes=list(cur_keys)
+                    key_codes=list(cur_keys),
+                    timestamp=screen_event.timestamp
                 ))
                 si += 1
-        np.save(os.path.join(self.save_dir, folder, f'screen'),
-                np.array(list(map(lambda x: x.screen, data_out))))
-        np.save(os.path.join(self.save_dir, folder, f'key'),
-                np.array(list(map(lambda x: x.key_codes, data_out)), dtype=object))
+        return data_out
+
+    def __save_np_screens(self, dataset: List[DatasetItem], folder: str):
+        np.save(os.path.join(self.save_dir, folder, 'screen'),
+                np.array(list(map(lambda x: x.screen, dataset))))
+
+    def __save_np_keys(self, dataset: List[DatasetItem], folder: str):
+        np.save(os.path.join(self.save_dir, folder, 'keys'),
+                np.array(list(map(lambda x: x.key_codes, dataset)), dtype=object))
+
+    def __save_avi_video(self, dataset: List[DatasetItem], folder: str):
+        avg_fps = len(dataset) / (dataset[-1].timestamp - dataset[0].timestamp)
+        print('average fps = ', avg_fps)
+        video_writer = cv2.VideoWriter(os.path.join(self.save_dir, folder, f'video.avi'),
+                                       cv2.VideoWriter_fourcc(*"XVID"), avg_fps, self.screen_res)
+        for item in dataset:
+            video_writer.write(cv2.cvtColor(item.screen, cv2.COLOR_BGR2RGB))
+        video_writer.release()
 
 
 def main():
