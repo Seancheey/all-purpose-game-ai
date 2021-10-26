@@ -109,7 +109,7 @@ class Recorder:
         def capture():
             # capture screen, then down-sample + trim the sides to meet specified resolution.
             # noinspection PyTypeChecker
-            return np.array(sct.grab(bounding_box))[w_start:w_end:down_sample_factor, h_start:h_end:down_sample_factor]
+            return np.array(sct.grab(bounding_box))[h_start:h_end:down_sample_factor, w_start:w_end:down_sample_factor]
 
         last_timestamp = datetime.now().timestamp()
         screens = []
