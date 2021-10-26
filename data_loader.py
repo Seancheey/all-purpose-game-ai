@@ -20,3 +20,8 @@ class LineaDataset(Dataset):
 
     def __getitem__(self, index) -> T_co:
         return self.screens[index], self.keys[index]
+
+
+if __name__ == '__main__':
+    dataset = LineaDataset(os.path.join(os.getcwd(), 'data'))
+    print(dataset[0])
