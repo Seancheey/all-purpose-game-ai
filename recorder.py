@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from screeninfo import screeninfo
 from typing import List, Tuple, Set
 from ratelimit import rate_limited, sleep_and_retry
-from data_format import keys, img_size
+from data_format import recording_keys, img_size, to_key_array
 from rich.progress import Progress, TextColumn, TimeElapsedColumn
 import psutil
 
@@ -41,7 +41,7 @@ class Recorder:
     save_dir: str
     max_fps: int = 30
     screen_res: Tuple[int] = img_size
-    recording_keys: Set[str] = field(default_factory=lambda: keys.copy())
+    recording_keys: Set[str] = field(default_factory=lambda: set(recording_keys))
     finish_record_key: str = 'space'
     discard_tail_sec: int = 3  # discard last N seconds of content, so that failing movement won't be learnt by model.
 
@@ -160,7 +160,7 @@ class Recorder:
 
     def __save_np_keys(self, dataset: List[DatasetItem], folder: str):
         np.save(os.path.join(self.save_dir, folder, 'keys'),
-                np.array(list(map(lambda x: x.key_codes, dataset)), dtype=object))
+                np.array(list(map(lambda x: to_key_array(x.key_codes), dataset)), dtype=bool))
 
     def __save_avi_video(self, dataset: List[DatasetItem], folder: str):
         avg_fps = len(dataset) / (dataset[-1].timestamp - dataset[0].timestamp)
