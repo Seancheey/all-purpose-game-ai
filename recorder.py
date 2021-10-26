@@ -107,7 +107,7 @@ class Recorder:
         @sleep_and_retry
         @rate_limited(1, 1 / self.max_fps)
         def capture():
-            # capture screen, then down-sample + trim the sides to meet specified resolution.
+            # capture screen, then down-sample + trim the sides to meet specified resolution. output color is RGBA.
             # noinspection PyTypeChecker
             return np.array(sct.grab(bounding_box))[h_start:h_end:down_sample_factor, w_start:w_end:down_sample_factor]
 
@@ -122,6 +122,7 @@ class Recorder:
             task_id = progress.add_task('recording', fps=0)
             while not stop_event.is_set():
                 img = capture()
+                img = cv2.cvtColor(img, cv2.COLOR_RGBA2RGB)
                 timestamp = datetime.now().timestamp()
                 screens.append(ScreenEvent(img, timestamp))
                 progress.update(task_id, fps=f'{round(1 / (timestamp - last_timestamp), 1)} frame per sec')
@@ -168,7 +169,7 @@ class Recorder:
         video_writer = cv2.VideoWriter(os.path.join(self.save_dir, folder, avi_video_filename),
                                        cv2.VideoWriter_fourcc(*"XVID"), avg_fps, self.screen_res)
         for item in dataset:
-            video_writer.write(cv2.cvtColor(item.screen, cv2.COLOR_RGBA2RGB))
+            video_writer.write(item.screen)
         video_writer.release()
 
 
