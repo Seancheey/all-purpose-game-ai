@@ -1,7 +1,7 @@
 numpy
 screeninfo
 pillow
-rich~=10.12.0
+rich
 keyboard
 mss
 ratelimit
@@ -9,3 +9,4 @@ opencv-python
 sklearn
 psutil
 matplotlib
+torch
