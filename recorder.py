@@ -176,6 +176,8 @@ def main():
     keyboard.add_hotkey('q', lambda: psutil.Process(os.getpid()).terminate())
     print('start recording... (press "q" to exit, press "space" to save and start next recording)')
     data_dir = os.path.join(os.getcwd(), 'data')
+    if not os.path.exists(data_dir):
+        os.mkdir(data_dir)
     while True:
         recorder = Recorder(save_dir=data_dir)
         recorder.record()
