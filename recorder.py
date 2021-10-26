@@ -1,17 +1,17 @@
 from concurrent.futures import ThreadPoolExecutor
+from threading import Event
 import os.path
 from cv2 import cv2
 import numpy as np
 from datetime import datetime
-from threading import Event
 import keyboard
 from mss import mss
-
 from dataclasses import dataclass, field
 from screeninfo import screeninfo
 from typing import List, Tuple, Set
 from ratelimit import rate_limited, sleep_and_retry
-from data_format import recording_keys, img_size, to_key_array
+from data_format import np_keys_filename, avi_video_filename, np_screens_filename, recording_keys, img_size, \
+    to_key_array
 from rich.progress import Progress, TextColumn, TimeElapsedColumn
 import psutil
 
@@ -92,10 +92,10 @@ class Recorder:
         monitor = monitors[0]
 
         down_sample_factor = min(monitor.width // self.screen_res[1], monitor.height // self.screen_res[1])
-        width_diff = (monitor.width - down_sample_factor*self.screen_res[0])
-        height_diff = (monitor.height - down_sample_factor*self.screen_res[1])
-        w_start, w_end = width_diff//2, monitor.width - width_diff//2
-        h_start, h_end = height_diff//2, monitor.height - height_diff//2
+        width_diff = (monitor.width - down_sample_factor * self.screen_res[0])
+        height_diff = (monitor.height - down_sample_factor * self.screen_res[1])
+        w_start, w_end = width_diff // 2, monitor.width - width_diff // 2
+        h_start, h_end = height_diff // 2, monitor.height - height_diff // 2
 
         bounding_box = {
             'left': monitor.x,
@@ -155,17 +155,17 @@ class Recorder:
         return data_out
 
     def __save_np_screens(self, dataset: List[DatasetItem], folder: str):
-        np.save(os.path.join(self.save_dir, folder, 'screen'),
+        np.save(os.path.join(self.save_dir, folder, np_screens_filename),
                 np.array(list(map(lambda x: x.screen, dataset))))
 
     def __save_np_keys(self, dataset: List[DatasetItem], folder: str):
-        np.save(os.path.join(self.save_dir, folder, 'keys'),
+        np.save(os.path.join(self.save_dir, folder, np_keys_filename),
                 np.array(list(map(lambda x: to_key_array(x.key_codes), dataset)), dtype=bool))
 
     def __save_avi_video(self, dataset: List[DatasetItem], folder: str):
         avg_fps = len(dataset) / (dataset[-1].timestamp - dataset[0].timestamp)
         print('average fps =', round(avg_fps, 2))
-        video_writer = cv2.VideoWriter(os.path.join(self.save_dir, folder, f'video.avi'),
+        video_writer = cv2.VideoWriter(os.path.join(self.save_dir, folder, avi_video_filename),
                                        cv2.VideoWriter_fourcc(*"XVID"), avg_fps, self.screen_res)
         for item in dataset:
             video_writer.write(cv2.cvtColor(item.screen, cv2.COLOR_RGBA2RGB))
