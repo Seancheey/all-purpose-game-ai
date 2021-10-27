@@ -2,8 +2,8 @@ import os
 
 import torch
 from torch import nn
-from data_loader import LineaDataset
-from model import ANN
+from helper.data_loader import LineaDataset
+from helper.model import ANN
 from rich.progress import Progress, TextColumn, TimeElapsedColumn
 
 learning_rate = 1e-3

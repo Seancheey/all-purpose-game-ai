@@ -8,7 +8,7 @@ from ratelimit import sleep_and_retry, rate_limited
 from rich.progress import Progress, TextColumn, TimeElapsedColumn
 from screeninfo import screeninfo
 
-from data_format import img_size
+from helper.data_format import img_size
 from mss import mss
 
 

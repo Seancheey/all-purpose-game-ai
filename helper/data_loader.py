@@ -3,7 +3,7 @@ import os
 import torch
 from torch.utils.data import Dataset
 from torch.utils.data.dataset import T_co
-from data_format import np_keys_filename, np_screens_filename, img_size, recording_keys
+from helper.data_format import np_keys_filename, np_screens_filename, img_size, recording_keys
 import numpy as np
 
 
@@ -38,5 +38,5 @@ class LineaDataset(Dataset):
 
 
 if __name__ == '__main__':
-    dataset = LineaDataset(os.path.join(os.getcwd(), 'data'))
+    dataset = LineaDataset(os.path.join(os.getcwd(), '../data'))
     print(dataset[0])

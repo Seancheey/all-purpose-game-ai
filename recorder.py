@@ -7,10 +7,10 @@ from datetime import datetime
 import keyboard
 from dataclasses import dataclass, field
 from typing import List, Tuple, Set
-from data_format import np_keys_filename, avi_video_filename, np_screens_filename, recording_keys, img_size, \
+from helper.data_format import np_keys_filename, avi_video_filename, np_screens_filename, recording_keys, img_size, \
     to_key_array
 import psutil
-from screen_streamer import ScreenStreamer
+from helper.screen_streamer import ScreenStreamer
 
 
 @dataclass

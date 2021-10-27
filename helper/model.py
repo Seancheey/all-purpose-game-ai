@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from data_format import img_size, recording_keys
+from helper.data_format import img_size, recording_keys
 
 
 class ANN(nn.Module):
