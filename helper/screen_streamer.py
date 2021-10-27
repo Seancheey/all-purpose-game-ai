@@ -17,10 +17,10 @@ class ScreenStreamer:
     max_fps: int = 30
     screen_res: Tuple[int] = img_size
 
-    def stream(self, stop_event) -> List[np.array]:
+    def stream(self, stop_event, progress_bar=None) -> List[np.array]:
         """
         starts streaming images, which stops only when stop_event is triggered.
-        :return: stream of images as np array, with shape (screen_res[0], screen_res[1], 3)
+        :return: stream of images as np array, with shape (screen_res[1], screen_res[0], 3)
         """
         monitors = screeninfo.get_monitors()
         assert len(monitors) > 0, OSError('No Monitor Detected.')
@@ -51,15 +51,11 @@ class ScreenStreamer:
 
         last_timestamp = datetime.now().timestamp()
 
-        with Progress(
-                TextColumn("Video Recorder Stats:"),
-                TimeElapsedColumn(),
-                TextColumn("[progress.description]{task.fields[fps]}")
-        ) as progress:
-            task_id = progress.add_task('recording', fps=0)
-            while not stop_event.is_set():
-                img = capture()
-                yield cv2.cvtColor(img, cv2.COLOR_RGBA2RGB)
+        task_id = progress_bar.add_task('recording', fps=0) if progress_bar else None
+        while not stop_event.is_set():
+            img = capture()
+            yield cv2.cvtColor(img, cv2.COLOR_RGBA2RGB)
+            if progress_bar is not None:
                 timestamp = datetime.now().timestamp()
-                progress.update(task_id, fps=f'{round(1 / (timestamp - last_timestamp), 1)} frame per sec')
+                progress_bar.update(task_id, fps=f'{round(1 / (timestamp - last_timestamp), 1)} frame per sec')
                 last_timestamp = timestamp

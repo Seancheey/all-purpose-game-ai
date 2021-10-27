@@ -7,6 +7,7 @@ from datetime import datetime
 import keyboard
 from dataclasses import dataclass, field
 from typing import List, Tuple, Set
+from rich.progress import Progress, TextColumn, TimeElapsedColumn
 from helper.data_format import np_keys_filename, avi_video_filename, np_screens_filename, recording_keys, img_size, \
     to_key_array
 import psutil
@@ -83,10 +84,15 @@ class Recorder:
         return key_sequence
 
     def __record_screen(self, stop_event: Event) -> List[ScreenEvent]:
-        streamer = ScreenStreamer(max_fps=self.max_fps, screen_res=self.screen_res)
-        screens = []
-        for img in streamer.stream(stop_event):
-            screens.append(ScreenEvent(img, datetime.now().timestamp()))
+        with Progress(
+                TextColumn("Video Recorder Stats:"),
+                TimeElapsedColumn(),
+                TextColumn("[progress.description]{task.fields[fps]}")
+        ) as progress:
+            streamer = ScreenStreamer(max_fps=self.max_fps, screen_res=self.screen_res)
+            screens = []
+            for img in streamer.stream(stop_event, progress):
+                screens.append(ScreenEvent(img, datetime.now().timestamp()))
         return screens
 
     def __to_training_data(self, key_sequence: List[KeyEvent], screen_sequence: List[ScreenEvent]):
