@@ -26,5 +26,5 @@ class ANN(nn.Module):
 
 if __name__ == '__main__':
     model = ANN().to('cuda')
-    test = torch.rand(1, 192, 108, 3, device='cuda')
+    test = torch.rand(1, 108, 192, 3, device='cuda')
     model(test)
