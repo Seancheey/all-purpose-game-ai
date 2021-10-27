@@ -5,15 +5,12 @@ from cv2 import cv2
 import numpy as np
 from datetime import datetime
 import keyboard
-from mss import mss
 from dataclasses import dataclass, field
-from screeninfo import screeninfo
 from typing import List, Tuple, Set
-from ratelimit import rate_limited, sleep_and_retry
 from data_format import np_keys_filename, avi_video_filename, np_screens_filename, recording_keys, img_size, \
     to_key_array
-from rich.progress import Progress, TextColumn, TimeElapsedColumn
 import psutil
+from screen_streamer import ScreenStreamer
 
 
 @dataclass
@@ -86,48 +83,10 @@ class Recorder:
         return key_sequence
 
     def __record_screen(self, stop_event: Event) -> List[ScreenEvent]:
-        sct = mss()
-        monitors = screeninfo.get_monitors()
-        assert len(monitors) > 0, OSError('No Monitor Detected.')
-        monitor = monitors[0]
-
-        down_sample_factor = min(monitor.width // self.screen_res[1], monitor.height // self.screen_res[1])
-        width_diff = (monitor.width - down_sample_factor * self.screen_res[0])
-        height_diff = (monitor.height - down_sample_factor * self.screen_res[1])
-        w_start, w_end = width_diff // 2, monitor.width - width_diff // 2
-        h_start, h_end = height_diff // 2, monitor.height - height_diff // 2
-
-        bounding_box = {
-            'left': monitor.x,
-            'top': monitor.y,
-            'width': monitor.width,
-            'height': monitor.height
-        }
-
-        @sleep_and_retry
-        @rate_limited(1, 1 / self.max_fps)
-        def capture():
-            # capture screen, then down-sample + trim the sides to meet specified resolution. output color is RGBA.
-            # noinspection PyTypeChecker
-            return np.array(sct.grab(bounding_box))[h_start:h_end:down_sample_factor, w_start:w_end:down_sample_factor]
-
-        last_timestamp = datetime.now().timestamp()
+        streamer = ScreenStreamer(max_fps=self.max_fps, screen_res=self.screen_res)
         screens = []
-
-        with Progress(
-                TextColumn("Video Recorder Stats:"),
-                TimeElapsedColumn(),
-                TextColumn("[progress.description]{task.fields[fps]}")
-        ) as progress:
-            task_id = progress.add_task('recording', fps=0)
-            while not stop_event.is_set():
-                img = capture()
-                img = cv2.cvtColor(img, cv2.COLOR_RGBA2RGB)
-                timestamp = datetime.now().timestamp()
-                screens.append(ScreenEvent(img, timestamp))
-                progress.update(task_id, fps=f'{round(1 / (timestamp - last_timestamp), 1)} frame per sec')
-                last_timestamp = timestamp
-
+        for img in streamer.stream(stop_event):
+            screens.append(ScreenEvent(img, datetime.now().timestamp()))
         return screens
 
     def __to_training_data(self, key_sequence: List[KeyEvent], screen_sequence: List[ScreenEvent]):
