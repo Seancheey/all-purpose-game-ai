@@ -38,7 +38,6 @@ def start_apply_keyboard_events():
 
 
 def stop():
-    print('sdfsdf')
     stop_event.set()
 
 
