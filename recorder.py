@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from typing import List, Tuple, Set
 from rich.progress import Progress, TextColumn, TimeElapsedColumn
 from helper.data_format import np_keys_filename, avi_video_filename, np_screens_filename, recording_keys, img_size, \
-    to_key_array
+    keys_to_directions
 import psutil
 from helper.screen_streamer import ScreenStreamer
 
@@ -126,7 +126,7 @@ class Recorder:
 
     def __save_np_keys(self, dataset: List[DatasetItem], folder: str):
         np.save(os.path.join(self.save_dir, folder, np_keys_filename),
-                np.array(list(map(lambda x: to_key_array(x.key_codes), dataset)), dtype=bool))
+                np.array(list(map(lambda x: keys_to_directions(x.key_codes), dataset)), dtype=bool))
 
     def __save_avi_video(self, dataset: List[DatasetItem], folder: str):
         avg_fps = len(dataset) / (dataset[-1].timestamp - dataset[0].timestamp)

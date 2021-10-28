@@ -1,9 +1,10 @@
 import keyboard
+import numpy as np
 import torch
 from helper.screen_streamer import ScreenStreamer
-from threading import Event
+from threading import Event, Thread
 from rich.progress import Progress
-from helper.data_format import recording_keys
+from helper.data_format import directions_to_keys
 from helper.model import ANN
 
 model = ANN()
@@ -19,20 +20,29 @@ def start_apply_keyboard_events():
         task = progress.add_task('', keys=[])
         cur_keys = set()
         for img in streamer.stream(stop_event):
-            pred = model(torch.tensor([img]))[0]
-            keys = {recording_keys[i]: bool(val > 0.5) for i, val in enumerate(pred)}
-            for key, down in keys.items():
-                if down and key not in cur_keys:
-                    keyboard.press(key)
-                elif not down and key in cur_keys:
-                    keyboard.release(key)
+            pred = model(torch.tensor(np.array([img])))[0]
+            keys = set(directions_to_keys(pred))
+            to_press = keys - cur_keys
+            to_release = cur_keys - keys
+            for key in to_press:
+                print(f'press {key}')
+                keyboard.press(key)
+            for key in to_release:
+                print(f'release {key}')
+                keyboard.release(key)
+            cur_keys = keys
             progress.update(task, keys=keys)
 
         for key in cur_keys:
             keyboard.release(key)
 
 
-keyboard.add_hotkey('space', lambda: stop_event.set())
-keyboard.add_hotkey('e', lambda: start_apply_keyboard_events())
+def stop():
+    print('sdfsdf')
+    stop_event.set()
+
+
+keyboard.add_hotkey('e', lambda: Thread(target=start_apply_keyboard_events).start())
+keyboard.add_hotkey('space', stop)
 
 stop_event.wait()

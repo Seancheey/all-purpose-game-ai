@@ -3,7 +3,7 @@ import os
 import torch
 from torch.utils.data import Dataset
 from torch.utils.data.dataset import T_co
-from helper.data_format import np_keys_filename, np_screens_filename, img_size, recording_keys
+from helper.data_format import np_keys_filename, np_screens_filename, img_size, key_map
 import numpy as np
 
 
@@ -25,7 +25,7 @@ class LineaDataset(Dataset):
 
         batched_upper_index = len(self.screens) - len(self.screens) % batch_size
         self.screens = np.reshape(self.screens[:batched_upper_index], (-1, batch_size, img_size[0], img_size[1], 3))
-        self.keys = np.reshape(self.keys[:batched_upper_index], (-1, batch_size, len(recording_keys)))
+        self.keys = np.reshape(self.keys[:batched_upper_index], (-1, batch_size) + key_map.shape)
 
         self.screens = torch.tensor(self.screens, device=device)
         self.keys = torch.tensor(self.keys, device=device, dtype=torch.float)

@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from helper.data_format import img_size, recording_keys
+from helper.data_format import img_size, key_map
 
 
 class ANN(nn.Module):
@@ -14,17 +14,21 @@ class ANN(nn.Module):
             nn.ReLU(),
             nn.Linear(512, 16),
             nn.ReLU(),
-            nn.Linear(16, len(recording_keys)),
+            nn.Linear(16, key_map.shape[0] * key_map.shape[1]),
             nn.Sigmoid()
         )
+        self.prediction = nn.Softmax(dim=-1)
 
     def forward(self, x: torch.Tensor):
         x = torch.div(x, 255)
         x = self.flatten(x)
-        return self.ann_stack(x)
+        x = self.ann_stack(x)
+        x = torch.reshape(x, (-1, key_map.shape[0], key_map.shape[1]))
+        x = self.prediction(x)
+        return x
 
 
 if __name__ == '__main__':
     model = ANN().to('cuda')
     test = torch.rand(1, 108, 192, 3, device='cuda')
-    model(test)
+    print(model(test))
