@@ -16,6 +16,8 @@ class LineaDataset(Dataset):
         self.screens = np.concatenate(screens_list)
         self.keys = np.concatenate(keys_list)
         assert len(self.screens) == len(self.keys), "screen size and key size is not matching"
+
+        # split to train/test dataset
         train_dataset_cut_index = round(0.9 * len(self.screens))
         if train:
             self.screens = self.screens[:train_dataset_cut_index]
@@ -24,9 +26,17 @@ class LineaDataset(Dataset):
             self.screens = self.screens[train_dataset_cut_index:]
             self.keys = self.keys[train_dataset_cut_index:]
 
+        # random shuffle
+        rng = np.random.default_rng()
+        rand_order = rng.permuted(np.arange(len(self.screens)))
+        self.screens = self.screens[rand_order]
+        self.keys = self.keys[rand_order]
+
+        # group to batches
         self.screens = self.to_batch(self.screens)
         self.keys = self.to_batch(self.keys)
 
+        # to pytorch tensors
         self.screens = torch.tensor(self.screens, device=device)
         self.keys = torch.tensor(self.keys, device=device, dtype=torch.float)
 
