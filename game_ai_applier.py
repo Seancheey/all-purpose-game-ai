@@ -21,7 +21,7 @@ def start_apply_keyboard_events():
         cur_keys = set()
         for img in streamer.stream(stop_event):
             pred = model(torch.tensor(np.array([img])))[0]
-            keys = set(directions_to_keys(pred))
+            keys = {k for k in directions_to_keys(pred) if k != ''}
             to_press = keys - cur_keys
             to_release = cur_keys - keys
             for key in to_press:
