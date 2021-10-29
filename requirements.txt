@@ -9,4 +9,5 @@ opencv-python
 sklearn
 psutil
 matplotlib
+imbalanced-learn
 torch
