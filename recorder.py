@@ -139,13 +139,18 @@ class Recorder:
 
 
 def main():
-    keyboard.add_hotkey('q', lambda: psutil.Process(os.getpid()).terminate())
-    print('start recording... (press "q" to exit, press "space" to save and start next recording)')
+    start_key = 'e'
+    stop_key = 'q'
+    next_key = 'space'
+    keyboard.add_hotkey(stop_key, lambda: psutil.Process(os.getpid()).terminate())
+    print(f'press "{start_key}" to start recording.')
+    keyboard.wait(start_key)
+    print(f'start recording... (press "{stop_key}" to exit, press "{next_key}" to save and start next recording)')
     data_dir = os.path.join(os.getcwd(), 'data')
     if not os.path.exists(data_dir):
         os.mkdir(data_dir)
     while True:
-        recorder = Recorder(save_dir=data_dir)
+        recorder = Recorder(save_dir=data_dir, finish_record_key=next_key)
         recorder.record()
 
 
