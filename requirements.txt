@@ -10,4 +10,7 @@ sklearn
 psutil
 matplotlib
 imbalanced-learn
+torchsummary
+scikit-learn
 torch
+torchvision

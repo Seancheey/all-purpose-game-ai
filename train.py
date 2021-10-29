@@ -4,10 +4,11 @@ import keyboard
 import torch
 from torch import nn
 
-from helper.data_loader import LineaDataset
+from helper.dataset import LineaDataset
 from helper.model import ANN
 from rich.progress import Progress, TextColumn, TimeElapsedColumn
 from threading import Event
+from torch.utils.data import DataLoader
 
 learning_rate = 1e-3
 batch_size = 200
@@ -17,8 +18,7 @@ device = 'cuda'
 if __name__ == '__main__':
     print('press q to stop training')
     data_dir = os.path.join(os.getcwd(), 'data')
-    train_dataset = LineaDataset(data_dir, train=True, batch_size=batch_size, device=device)
-    test_dataset = LineaDataset(data_dir, train=False, batch_size=batch_size, device=device)
+    train_dataset = DataLoader(LineaDataset(data_dir), batch_size=batch_size, shuffle=True)
 
     model = ANN().to(device)
     loss_fn = nn.CrossEntropyLoss()
