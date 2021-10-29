@@ -46,6 +46,8 @@ def keys_to_directions(keys: Union[List[str], str]) -> np.ndarray:
 
 
 def directions_to_keys(directions: torch.Tensor) -> str:
+    if type(directions) != torch.Tensor:
+        directions = torch.from_numpy(np.array(directions, dtype=int))
     return key_encoder.inverse_transform(
         functional.one_hot(torch.argmax(directions, keepdim=True), num_classes=key_map.shape[0]))[0]
 
