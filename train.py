@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 from tensorboard import program
 from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import time
 
 
@@ -52,20 +52,28 @@ class Trainer:
     loss_fn = nn.CrossEntropyLoss()
     log_dir = os.path.join(os.getcwd(), 'runs')
     train_test_split_ratio = 0.8
+    stop_train_key = 'ctrl+q'
+    __stop_event: Event = field(default_factory=lambda: Event())
 
-    def train(self, model, dataset: torch.utils.data.Dataset, stop_event: Event = None):
+    def train(self, model, dataset: torch.utils.data.Dataset):
         model = model.to(self.device)
+        # split data to train&test
         train_data_size = round(len(dataset) * self.train_test_split_ratio)
         test_data_size = len(dataset) - train_data_size
         train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_data_size, test_data_size])
         train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
+        # tensorboard summary writer
         summarizer = Summarizer(SummaryWriter(os.path.join(self.log_dir, datetime.now().strftime('%Y%m%d-%H%M%S'))))
 
-        optimizer = self.optimizer_func(model.parameters(), lr=self.learning_rate)
+        # stop event listening setup
+        keyboard.add_hotkey(self.stop_train_key, self.stop_training)
+        self.__stop_event.clear()
+        print(f'Training started. Press {self.stop_train_key} to stop.')
 
+        optimizer = self.optimizer_func(model.parameters(), lr=self.learning_rate)
         for epoch in range(self.epochs):
-            time.sleep(0.1)  # leave a bit time for event loop to react
-            if stop_event is not None and stop_event.is_set():
+            time.sleep(0.1)  # leave a bit time for keyboard event loop to react
+            if self.__stop_event.is_set():
                 break
             # train model with train dataset
             for X, y in train_loader:
@@ -90,19 +98,19 @@ class Trainer:
         url = tb.launch()
         print(f'TensorBoard starting at {url}')
 
+    def stop_training(self):
+        print("Stopping Training. Please allow time for the trainer to finish last epoch.")
+        self.__stop_event.set()
+
 
 def main():
-    print('press q to stop training')
-    keyboard.add_hotkey('q', lambda: stop_event.set())
-
     trainer = Trainer()
     trainer.start_tensor_board()
 
     dataset = LineaDataset(os.path.join(os.getcwd(), 'data'))
     model = ANN()
-    stop_event = Event()
 
-    trainer.train(model, dataset, stop_event)
+    trainer.train(model, dataset)
     torch.save(model.state_dict(), 'model.pth')
 
 
