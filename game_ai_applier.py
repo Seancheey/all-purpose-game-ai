@@ -6,6 +6,7 @@ from threading import Event, Thread
 from rich.progress import Progress
 from helper.data_format import directions_to_keys
 from helper.model import ANN
+from torchvision.transforms import ToTensor
 
 model = ANN()
 model.load_state_dict(torch.load('model.pth'))
@@ -19,9 +20,11 @@ def start_apply_keyboard_events():
     with Progress('Prediction: keys: {task.fields[keys]}') as progress:
         task = progress.add_task('', keys=[])
         cur_keys = set()
+        to_tensor = ToTensor()
         for img in streamer.stream(stop_event):
-            pred = model(torch.tensor(np.array([img])))[0]
-            keys = {k for k in directions_to_keys(pred) if k != ''}
+            img = to_tensor(img)
+            pred = model(torch.reshape(img, (1,) + img.shape))[0]
+            keys = set(list(str(directions_to_keys(pred)[0])))
             to_press = keys - cur_keys
             to_release = cur_keys - keys
             for key in to_press:
