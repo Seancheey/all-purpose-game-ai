@@ -56,7 +56,7 @@ class Trainer:
 
     __stop_event: Event = field(default_factory=lambda: Event())
 
-    def train(self, model, dataset: torch.utils.data.Dataset):
+    def train(self, model, dataset: torch.utils.data.Dataset, run_name: str = "train"):
         model = model.to(self.device)
         # split data to train&test
         train_data_size = round(len(dataset) * self.train_test_split_ratio)
@@ -64,7 +64,8 @@ class Trainer:
         train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_data_size, test_data_size])
         train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
         # tensorboard summary writer
-        summarizer = Summarizer(SummaryWriter(os.path.join(self.log_dir, datetime.now().strftime('%Y%m%d-%H%M%S'))))
+        summarizer = Summarizer(
+            SummaryWriter(os.path.join(self.log_dir, run_name + "-" + datetime.now().strftime('%Y%m%d-%H-%M-%S'))))
         summarizer.add_graph(model, next(iter(train_loader))[0])
 
         # stop event listening setup
@@ -114,7 +115,7 @@ def main():
     dataset = LineaDataset(os.path.join(os.getcwd(), 'data'))
     model = ANN()
 
-    trainer.train(model, dataset)
+    trainer.train(model, dataset, 'cnn-2-stack')
     torch.save(model.state_dict(), 'model.pth')
 
 
