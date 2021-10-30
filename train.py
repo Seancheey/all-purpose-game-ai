@@ -53,6 +53,7 @@ class Trainer:
     log_dir = os.path.join(os.getcwd(), 'runs')
     train_test_split_ratio = 0.8
     stop_train_key = 'ctrl+q'
+
     __stop_event: Event = field(default_factory=lambda: Event())
 
     def train(self, model, dataset: torch.utils.data.Dataset):
@@ -76,7 +77,8 @@ class Trainer:
             time.sleep(0.1)  # leave a bit time for keyboard event loop to react
             if self.__stop_event.is_set():
                 break
-            # train model with train dataset
+
+            model.train(mode=True)
             for X, y in train_loader:
                 pred = model(X)
                 loss = self.loss_fn(pred, y)
@@ -86,7 +88,8 @@ class Trainer:
                 optimizer.step()
 
                 summarizer.add_train_loss(loss)
-            # eval model with test dataset
+
+            model.eval()
             with torch.no_grad():
                 test_loss_sum = 0
                 for X, y in DataLoader(test_dataset):
