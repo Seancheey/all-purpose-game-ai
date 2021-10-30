@@ -17,7 +17,7 @@ class ScreenStreamer:
     max_fps: int = 30
     screen_res: Tuple[int] = img_size
 
-    def stream(self, stop_event, progress_bar=None) -> List[np.array]:
+    def stream(self, stop_event, progress_bar=None) -> List[np.ndarray]:
         """
         starts streaming images, which stops only when stop_event is triggered.
         :return: stream of images as np array, with shape (screen_res[1], screen_res[0], 3)
