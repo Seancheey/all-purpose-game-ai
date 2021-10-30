@@ -17,14 +17,17 @@ import time
 
 @dataclass
 class Summarizer:
+    """
+    Writes various summary information about model to tensor board log, so it could be read be tensor board.
+    """
     writer: SummaryWriter
     train_loss_record_interval = 1
     __train_loss_step = 0
     __test_loss_step = 0
     __train_loss_loop_i = 1
 
-    def add_graph(self, model, data_input):
-        self.writer.add_graph(model, data_input)
+    def add_graph(self, model, sample_data_input):
+        self.writer.add_graph(model, sample_data_input)
 
     def add_train_loss(self, loss):
         if self.__train_loss_loop_i < self.train_loss_record_interval:
@@ -41,7 +44,7 @@ class Summarizer:
 
 @dataclass
 class Trainer:
-    learning_rate = 1e-2
+    learning_rate = 0.01
     batch_size = 200
     epochs = 500
     device = 'cuda'
@@ -50,7 +53,7 @@ class Trainer:
     log_dir = os.path.join(os.getcwd(), 'runs')
     train_test_split_ratio = 0.8
 
-    def train(self, model, dataset: torch.utils.data.Dataset, stop_event: Event):
+    def train(self, model, dataset: torch.utils.data.Dataset, stop_event: Event = None):
         model = model.to(self.device)
         train_data_size = round(len(dataset) * self.train_test_split_ratio)
         test_data_size = len(dataset) - train_data_size
@@ -61,9 +64,10 @@ class Trainer:
         optimizer = self.optimizer_func(model.parameters(), lr=self.learning_rate)
 
         for epoch in range(self.epochs):
-            time.sleep(0.1)  # leave a bit time for keyboard event loop to react
-            if stop_event.is_set():
+            time.sleep(0.1)  # leave a bit time for event loop to react
+            if stop_event is not None and stop_event.is_set():
                 break
+            # train model with train dataset
             for X, y in train_loader:
                 pred = model(X)
                 loss = self.loss_fn(pred, y)
@@ -73,6 +77,7 @@ class Trainer:
                 optimizer.step()
 
                 summarizer.add_train_loss(loss)
+            # eval model with test dataset
             with torch.no_grad():
                 test_loss_sum = 0
                 for X, y in DataLoader(test_dataset):
@@ -80,15 +85,6 @@ class Trainer:
                 summarizer.add_test_loss(test_loss_sum / len(test_dataset))
 
     def start_tensor_board(self):
-        """
-        This board will contain following figures:
-        1. Network structure
-        2. Train Loss
-        3. Test Loss
-        4. PR curve
-        5. sampled image classification
-        :return:
-        """
         tb = program.TensorBoard()
         tb.configure(argv=[None, '--logdir', self.log_dir])
         url = tb.launch()
