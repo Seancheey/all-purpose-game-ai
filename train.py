@@ -44,7 +44,7 @@ class Summarizer:
 
 @dataclass
 class Trainer:
-    learning_rate = 0.01
+    learning_rate = 0.001
     batch_size = 200
     epochs = 500
     device = 'cuda'
@@ -64,6 +64,7 @@ class Trainer:
         train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
         # tensorboard summary writer
         summarizer = Summarizer(SummaryWriter(os.path.join(self.log_dir, datetime.now().strftime('%Y%m%d-%H%M%S'))))
+        summarizer.add_graph(model, next(iter(train_loader))[0])
 
         # stop event listening setup
         keyboard.add_hotkey(self.stop_train_key, self.stop_training)
