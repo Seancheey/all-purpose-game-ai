@@ -5,10 +5,10 @@ from helper.screen_streamer import ScreenStreamer
 from threading import Event, Thread
 from rich.progress import Progress
 from helper.data_format import directions_to_keys
-from helper.model import ANN
+from helper.model import PlayModel
 from torchvision.transforms import ToTensor
 
-model = ANN()
+model = PlayModel()
 model.load_state_dict(torch.load('model.pth'))
 
 stop_event = Event()
@@ -28,10 +28,8 @@ def start_apply_keyboard_events():
             to_press = keys - cur_keys
             to_release = cur_keys - keys
             for key in to_press:
-                print(f'press {key}')
                 keyboard.press(key)
             for key in to_release:
-                print(f'release {key}')
                 keyboard.release(key)
             cur_keys = keys
             progress.update(task, keys=keys)

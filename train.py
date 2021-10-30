@@ -5,7 +5,7 @@ import torch
 from torch import nn
 
 from helper.dataset import LineaDataset
-from helper.model import ANN
+from helper.model import PlayModel
 from threading import Event
 from torch.utils.data import DataLoader
 from tensorboard import program
@@ -113,7 +113,7 @@ def main():
     trainer.start_tensor_board()
 
     dataset = LineaDataset(os.path.join(os.getcwd(), 'data'))
-    model = ANN()
+    model = PlayModel()
 
     trainer.train(model, dataset, 'cnn-3-stack')
     torch.save(model.state_dict(), 'model.pth')

@@ -5,9 +5,9 @@ from torchsummary import summary
 from helper.data_format import key_map
 
 
-class ANN(nn.Module):
+class PlayModel(nn.Module):
     def __init__(self):
-        super(ANN, self).__init__()
+        super(PlayModel, self).__init__()
         self.cnn_stack = nn.Sequential(
             nn.Conv2d(3, 16, kernel_size=(8, 8), stride=(2, 2), padding=2),
             nn.MaxPool2d(kernel_size=(2, 2)),
@@ -35,7 +35,7 @@ class ANN(nn.Module):
 
 
 if __name__ == '__main__':
-    model = ANN().to('cuda')
+    model = PlayModel().to('cuda')
     summary(model, (3, 108, 192), batch_size=64)
     test = torch.rand(100, 3, 108, 192, device='cuda')
     print(model(test))
