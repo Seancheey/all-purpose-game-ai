@@ -115,7 +115,7 @@ def main():
     dataset = LineaDataset(os.path.join(os.getcwd(), 'data'))
     model = ANN()
 
-    trainer.train(model, dataset, 'cnn-2-stack')
+    trainer.train(model, dataset, 'cnn-3-stack')
     torch.save(model.state_dict(), 'model.pth')
 
 

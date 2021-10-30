@@ -12,10 +12,12 @@ class ANN(nn.Module):
             nn.Conv2d(3, 16, kernel_size=(8, 8), stride=(2, 2), padding=2),
             nn.MaxPool2d(kernel_size=(2, 2)),
             nn.Conv2d(16, 32, kernel_size=(3, 3), padding=1),
+            nn.MaxPool2d(kernel_size=(2, 2)),
+            nn.Conv2d(32, 64, kernel_size=(3, 3), padding=1),
             nn.MaxPool2d(kernel_size=(2, 2))
         )
         self.ann_stack = nn.Sequential(
-            nn.Linear(9568, 1024),
+            nn.Linear(4224, 1024),
             nn.Dropout(p=0.3),
             nn.ReLU(),
             nn.Linear(1024, 1024),
