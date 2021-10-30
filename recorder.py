@@ -41,7 +41,8 @@ class Recorder:
     screen_res: Tuple[int] = img_size
     recording_keys: Set[str] = field(default_factory=lambda: set(recording_keys))
     finish_record_key: str = 'space'
-    discard_tail_sec: int = 3  # discard last N seconds of content, so that failing movement won't be learnt by model.
+    discard_tail_sec: float = 3  # discard last N seconds of content, so that failing movement won't be learnt by model.
+    key_recording_delay_sec: float = -0.010  # record key events N sec earlier to compensate for delay
 
     def record(self):
         stop_event = Event()
@@ -75,7 +76,8 @@ class Recorder:
 
         def handle_event(event: keyboard.KeyboardEvent):
             key_sequence.append(
-                KeyEvent(event.name, datetime.now().timestamp(), event.event_type == 'down'))
+                KeyEvent(event.name, datetime.now().timestamp() + self.key_recording_delay_sec,
+                         event.event_type == 'down'))
 
         for key in self.recording_keys:
             keyboard.hook_key(key, handle_event)
