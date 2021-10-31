@@ -1,18 +1,20 @@
-from concurrent.futures import ThreadPoolExecutor
-from threading import Event
 import os.path
-from cv2 import cv2
-import numpy as np
-from datetime import datetime
-import keyboard
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
+from datetime import datetime
+from threading import Event
 from typing import List, Set
-from rich.progress import Progress, TextColumn, TimeElapsedColumn
-from helper.data_format import np_keys_filename, avi_video_filename, np_screens_filename, recording_keys, img_size, \
-    ImageFormat
+
+import keyboard
+import numpy as np
 import psutil
+from cv2 import cv2
+from rich.progress import Progress, TextColumn, TimeElapsedColumn
+
+from helper.data_format import np_keys_filename, avi_video_filename, np_screens_filename, recording_keys, img_size
 from helper.screen_streamer import ScreenStreamer
 from helper.transforms import keys_to_directions
+from helper.window_region import WindowRegion
 
 
 @dataclass
@@ -38,12 +40,15 @@ class DatasetItem:
 @dataclass
 class Recorder:
     save_dir: str
-    max_fps: int = 30
-    screen_res: ImageFormat = img_size
     recording_keys: Set[str] = field(default_factory=lambda: set(recording_keys))
     finish_record_key: str = 'space'
     discard_tail_sec: float = 3  # discard last N seconds of content, so that failing movement won't be learnt by model.
     key_recording_delay_sec: float = -0.010  # record key events N sec earlier to compensate for delay
+    screen_streamer: ScreenStreamer = field(default_factory=lambda: ScreenStreamer(
+        max_fps=30,
+        output_img_format=img_size,
+        record_window_region=WindowRegion.from_first_monitor()
+    ))
 
     def record(self):
         stop_event = Event()
@@ -92,9 +97,8 @@ class Recorder:
                 TimeElapsedColumn(),
                 TextColumn("[progress.description]{task.fields[fps]}")
         ) as progress:
-            streamer = ScreenStreamer(max_fps=self.max_fps, screen_res=self.screen_res)
             screens = []
-            for img in streamer.stream(stop_event, progress):
+            for img in self.screen_streamer.stream(stop_event, progress):
                 screens.append(ScreenEvent(img, datetime.now().timestamp()))
         return screens
 
@@ -135,7 +139,8 @@ class Recorder:
         avg_fps = len(dataset) / (dataset[-1].timestamp - dataset[0].timestamp)
         print('average fps =', round(avg_fps, 2))
         video_writer = cv2.VideoWriter(os.path.join(self.save_dir, folder, avi_video_filename),
-                                       cv2.VideoWriter_fourcc(*"XVID"), avg_fps, self.screen_res.resolution_shape())
+                                       cv2.VideoWriter_fourcc(*"XVID"), avg_fps,
+                                       self.screen_streamer.output_img_format.resolution_shape())
         for item in dataset:
             video_writer.write(item.screen)
         video_writer.release()

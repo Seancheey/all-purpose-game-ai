@@ -115,7 +115,7 @@ def main():
     dataset = LineaDataset(os.path.join(os.getcwd(), 'data'))
     model = PlayModel()
 
-    trainer.train(model, dataset, 'cnn-3-stack')
+    trainer.train(model, dataset, 'multi-class-train')
     torch.save(model.state_dict(), 'model.pth')
 
 
