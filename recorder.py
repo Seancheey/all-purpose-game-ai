@@ -39,9 +39,12 @@ class DatasetItem:
 
 @dataclass
 class Recorder:
+    """
+    Recorder that records both screen video and keyboard events at the same time.
+    Upon calling stop_and_save(), key inputs and video will be saved to save_dir in npy format, along with an avi video.
+    """
     save_dir: str
-    recording_keys: Set[str] = field(default_factory=lambda: set(recording_keys))
-    finish_record_key: str = 'space'
+    recording_keys: Set[str]
     discard_tail_sec: float = 3  # discard last N seconds of content, so that failing movement won't be learnt by model.
     key_recording_delay_sec: float = -0.010  # record key events N sec earlier to compensate for delay
     screen_streamer: ScreenStreamer = field(default_factory=lambda: ScreenStreamer(
@@ -49,13 +52,17 @@ class Recorder:
         output_img_format=img_size,
         record_window_region=WindowRegion.from_first_monitor()
     ))
+    __finish_record_event: Event = field(default_factory=lambda: Event())
 
     def record(self):
-        stop_event = Event()
+        """
+        Make a blocking call to start recording.
+        """
+        self.__finish_record_event.clear()
         with ThreadPoolExecutor(3) as pool:
-            screen_future = pool.submit(self.__record_screen, stop_event)
-            keyboard_future = pool.submit(self.__record_keyboard, stop_event)
-            pool.submit(self.__listen_to_finish_record_event, stop_event).result()
+            screen_future = pool.submit(self.__record_screen)
+            keyboard_future = pool.submit(self.__record_keyboard)
+            pool.submit(self.__listen_to_finish_record_event).result()
 
             screen_data = screen_future.result()
             keyboard_data = keyboard_future.result()
@@ -73,11 +80,13 @@ class Recorder:
         self.__save_avi_video(dataset, folder_name)
         print(f'saved data to {folder_name}\n')
 
-    def __listen_to_finish_record_event(self, stop_event):
-        keyboard.wait(self.finish_record_key)
-        stop_event.set()
+    def stop_and_save(self):
+        self.__finish_record_event.set()
 
-    def __record_keyboard(self, stop_event: Event) -> List[KeyEvent]:
+    def __listen_to_finish_record_event(self):
+        self.__finish_record_event.wait()
+
+    def __record_keyboard(self) -> List[KeyEvent]:
         key_sequence = []
 
         def handle_event(event: keyboard.KeyboardEvent):
@@ -88,17 +97,17 @@ class Recorder:
         for key in self.recording_keys:
             keyboard.hook_key(key, handle_event)
 
-        stop_event.wait()
+        self.__finish_record_event.wait()
         return key_sequence
 
-    def __record_screen(self, stop_event: Event) -> List[ScreenEvent]:
+    def __record_screen(self) -> List[ScreenEvent]:
         with Progress(
                 TextColumn("Video Recorder Stats:"),
                 TimeElapsedColumn(),
                 TextColumn("[progress.description]{task.fields[fps]}")
         ) as progress:
             screens = []
-            for img in self.screen_streamer.stream(stop_event, progress):
+            for img in self.screen_streamer.stream(self.__finish_record_event, progress):
                 screens.append(ScreenEvent(img, datetime.now().timestamp()))
         return screens
 
@@ -146,20 +155,40 @@ class Recorder:
         video_writer.release()
 
 
+@dataclass
+class RepeatingRecorder:
+    recorder: Recorder
+    start_key: str
+    stop_key: str
+    save_key: str
+
+    def start_recording(self):
+        keyboard.add_hotkey(self.stop_key, RepeatingRecorder.terminate_everything)
+        keyboard.add_hotkey(self.save_key, lambda: self.recorder.stop_and_save())
+        print(f'press "{self.start_key}" to start recording.')
+        keyboard.wait(self.start_key)
+        print(f'start recording...')
+        print(f'press "{self.stop_key}" to exit, press "{self.save_key}" to save and start next recording')
+        if not os.path.exists(self.recorder.save_dir):
+            os.mkdir(self.recorder.save_dir)
+        while True:
+            self.recorder.record()
+
+    @staticmethod
+    def terminate_everything():
+        psutil.Process(os.getpid()).terminate()
+
+
 def main():
-    start_key = 'e'
-    stop_key = 'q'
-    next_key = 'space'
-    keyboard.add_hotkey(stop_key, lambda: psutil.Process(os.getpid()).terminate())
-    print(f'press "{start_key}" to start recording.')
-    keyboard.wait(start_key)
-    print(f'start recording... (press "{stop_key}" to exit, press "{next_key}" to save and start next recording)')
-    data_dir = os.path.join(os.getcwd(), 'data')
-    if not os.path.exists(data_dir):
-        os.mkdir(data_dir)
-    while True:
-        recorder = Recorder(save_dir=data_dir, finish_record_key=next_key)
-        recorder.record()
+    RepeatingRecorder(
+        recorder=Recorder(
+            save_dir=os.path.join(os.getcwd(), 'data'),
+            recording_keys=recording_keys,
+        ),
+        start_key='e',
+        stop_key='q',
+        save_key='space'
+    ).start_recording()
 
 
 if __name__ == "__main__":
