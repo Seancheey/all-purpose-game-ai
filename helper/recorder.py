@@ -11,9 +11,9 @@ import psutil
 from cv2 import cv2
 from rich.progress import Progress, TextColumn, TimeElapsedColumn
 
-from helper.data_format import np_keys_filename, avi_video_filename, np_screens_filename, recording_keys, img_size
+from helper.data_format import np_keys_filename, avi_video_filename, np_screens_filename, img_size
 from helper.screen_streamer import ScreenStreamer
-from helper.transforms import keys_to_directions
+from helper.transforms import KeyTransformer
 from helper.window_region import WindowRegion
 
 
@@ -45,6 +45,7 @@ class Recorder:
     """
     save_dir: str
     recording_keys: Set[str]
+    key_transformer: KeyTransformer
     discard_tail_sec: float = 3  # discard last N seconds of content, so that failing movement won't be learnt by model.
     key_recording_delay_sec: float = -0.010  # record key events N sec earlier to compensate for delay
     screen_streamer: ScreenStreamer = field(default_factory=lambda: ScreenStreamer(
@@ -142,7 +143,7 @@ class Recorder:
 
     def __save_np_keys(self, dataset: List[DatasetItem], folder: str):
         np.save(os.path.join(self.save_dir, folder, np_keys_filename),
-                np.stack(list(map(lambda x: keys_to_directions(x.key_codes), dataset))))
+                np.stack(list(map(lambda x: self.key_transformer.keys_to_directions(x.key_codes), dataset))))
 
     def __save_avi_video(self, dataset: List[DatasetItem], folder: str):
         avg_fps = len(dataset) / (dataset[-1].timestamp - dataset[0].timestamp)
@@ -177,19 +178,3 @@ class RepeatingRecorder:
     @staticmethod
     def terminate_everything():
         psutil.Process(os.getpid()).terminate()
-
-
-def main():
-    RepeatingRecorder(
-        recorder=Recorder(
-            save_dir=os.path.join(os.getcwd(), 'data'),
-            recording_keys=recording_keys,
-        ),
-        start_key='e',
-        stop_key='q',
-        save_key='space'
-    ).start_recording()
-
-
-if __name__ == "__main__":
-    main()

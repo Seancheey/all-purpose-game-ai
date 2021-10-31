@@ -1,18 +1,18 @@
 import os
+import time
+from dataclasses import dataclass, field
+from datetime import datetime
+from threading import Event
 
 import keyboard
 import torch
+from tensorboard import program
 from torch import nn
+from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 
 from helper.dataset import LineaDataset
 from helper.model import PlayModel
-from threading import Event
-from torch.utils.data import DataLoader
-from tensorboard import program
-from torch.utils.tensorboard import SummaryWriter
-from datetime import datetime
-from dataclasses import dataclass, field
-import time
 
 
 @dataclass
@@ -44,6 +44,10 @@ class Summarizer:
 
 @dataclass
 class Trainer:
+    model: PlayModel
+    dataset: LineaDataset
+    train_name: str
+    model_save_path: str
     learning_rate = 0.001
     batch_size = 200
     epochs = 500
@@ -56,16 +60,22 @@ class Trainer:
 
     __stop_event: Event = field(default_factory=lambda: Event())
 
-    def train(self, model, dataset: torch.utils.data.Dataset, run_name: str = "train"):
-        model = model.to(self.device)
+    def train_and_save(self):
+        self.start_tensor_board()
+        self.train()
+        self.save_model()
+
+    def train(self):
+        model = self.model.to(self.device)
         # split data to train&test
-        train_data_size = round(len(dataset) * self.train_test_split_ratio)
-        test_data_size = len(dataset) - train_data_size
-        train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_data_size, test_data_size])
+        train_data_size = round(len(self.dataset) * self.train_test_split_ratio)
+        test_data_size = len(self.dataset) - train_data_size
+        train_dataset, test_dataset = torch.utils.data.random_split(self.dataset, [train_data_size, test_data_size])
         train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
         # tensorboard summary writer
         summarizer = Summarizer(
-            SummaryWriter(os.path.join(self.log_dir, run_name + "-" + datetime.now().strftime('%Y%m%d-%H-%M-%S'))))
+            SummaryWriter(
+                os.path.join(self.log_dir, self.train_name + "-" + datetime.now().strftime('%Y%m%d-%H-%M-%S'))))
         summarizer.add_graph(model, next(iter(train_loader))[0])
 
         # stop event listening setup
@@ -107,17 +117,5 @@ class Trainer:
         print("Stopping Training. Please allow time for the trainer to finish last epoch.")
         self.__stop_event.set()
 
-
-def main():
-    trainer = Trainer()
-    trainer.start_tensor_board()
-
-    dataset = LineaDataset(os.path.join(os.getcwd(), 'data'))
-    model = PlayModel()
-
-    trainer.train(model, dataset, 'multi-class-train')
-    torch.save(model.state_dict(), 'model.pth')
-
-
-if __name__ == '__main__':
-    main()
+    def save_model(self):
+        torch.save(self.model.state_dict(), self.model_save_path)

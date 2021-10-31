@@ -1,11 +1,12 @@
 import torch
 from torch import nn
 from torchsummary import summary
-from helper.data_format import recording_keys, img_size
+
+from helper.data_format import img_size
 
 
 class PlayModel(nn.Module):
-    def __init__(self, num_outputs: int = len(recording_keys)):
+    def __init__(self, num_outputs: int):
         super(PlayModel, self).__init__()
         self.cnn_stack = nn.Sequential(
             nn.Conv2d(3, 16, kernel_size=(8, 8), stride=(2, 2), padding=2),
@@ -39,7 +40,7 @@ class PlayModel(nn.Module):
 
 
 if __name__ == '__main__':
-    model = PlayModel().to('cuda')
+    model = PlayModel(num_outputs=4).to('cuda')
     summary(model, img_size.tensor_shape(), batch_size=64)
     test = torch.rand(100, *img_size.tensor_shape(), device='cuda')
     print(model(test)[0].shape)

@@ -1,15 +1,18 @@
 import os
+
+import numpy as np
 import torch
+from imblearn.over_sampling import RandomOverSampler
 from torch.utils.data import Dataset
 from torch.utils.data.dataset import T_co
-import numpy as np
-from imblearn.over_sampling import RandomOverSampler
-from helper.transforms import image_to_tensor, directions_to_ordinal, ordinal_to_directions
+
 from helper.data_format import np_keys_filename, np_screens_filename, img_size
+from helper.transforms import image_to_tensor, KeyTransformer
 
 
 class LineaDataset(Dataset):
-    def __init__(self, data_dir, seed=0):
+    def __init__(self, data_dir, key_transformer: KeyTransformer, seed=0):
+        self.key_transformer = key_transformer
         record_dirs = list(map(lambda path: os.path.join(data_dir, path), os.listdir(data_dir)))
         keys_list = [np.load(os.path.join(record_dir, np_keys_filename)) for record_dir in record_dirs]
         screens_list = [np.load(os.path.join(record_dir, np_screens_filename)) for record_dir in record_dirs]
@@ -28,7 +31,7 @@ class LineaDataset(Dataset):
 
     def __over_sample(self, seed):
         # sampler doesn't support multi-label input, so transform keys to ordinal encoding first
-        self.keys = np.fromiter((directions_to_ordinal(d) for d in self.keys), np.int8)
+        self.keys = np.fromiter((self.key_transformer.directions_to_ordinal(d) for d in self.keys), np.int8)
         # sampler doesn't support multi-dimension input, so reshape image first
         self.screens = self.screens.reshape((len(self.screens), -1))
 
@@ -36,9 +39,4 @@ class LineaDataset(Dataset):
         self.screens, self.keys = sm.fit_resample(self.screens, self.keys)
 
         self.screens = self.screens.reshape((-1,) + img_size.np_shape())
-        self.keys = np.stack([ordinal_to_directions(o) for o in self.keys])
-
-
-if __name__ == '__main__':
-    dataset = LineaDataset(os.path.join(os.getcwd(), '../data'))
-    print(dataset[0])
+        self.keys = np.stack([self.key_transformer.ordinal_to_directions(o) for o in self.keys])
