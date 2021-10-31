@@ -3,7 +3,7 @@ import torch
 from helper.screen_streamer import ScreenStreamer
 from threading import Event, Thread
 from rich.progress import Progress
-from helper.transforms import directions_to_keys, image_to_tensor
+from helper.transforms import image_to_tensor, pred_to_keys
 from helper.model import PlayModel
 
 model = PlayModel()
@@ -21,7 +21,7 @@ def start_apply_keyboard_events():
         for img in streamer.stream(stop_event):
             img = image_to_tensor(img)
             pred = model(torch.reshape(img, (1,) + img.shape))[0]
-            keys = set(list(str(directions_to_keys(pred)[0])))
+            keys = set(pred_to_keys(pred))
             to_press = keys - cur_keys
             to_release = cur_keys - keys
             for key in to_press:
