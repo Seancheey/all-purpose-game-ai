@@ -49,7 +49,7 @@ class Trainer:
     epochs = 500
     device = 'cuda'
     optimizer_func = torch.optim.Adam
-    loss_fn = nn.CrossEntropyLoss()
+    loss_fn = nn.BCELoss()
     log_dir = os.path.join(os.getcwd(), 'runs')
     train_test_split_ratio = 0.8
     stop_train_key = 'ctrl+q'

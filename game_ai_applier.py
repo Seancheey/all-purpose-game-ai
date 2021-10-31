@@ -1,12 +1,10 @@
 import keyboard
-import numpy as np
 import torch
 from helper.screen_streamer import ScreenStreamer
 from threading import Event, Thread
 from rich.progress import Progress
-from helper.data_format import directions_to_keys
+from helper.transforms import directions_to_keys, image_to_tensor
 from helper.model import PlayModel
-from torchvision.transforms import ToTensor
 
 model = PlayModel()
 model.load_state_dict(torch.load('model.pth'))
@@ -20,9 +18,8 @@ def start_apply_keyboard_events():
     with Progress('Prediction: keys: {task.fields[keys]}') as progress:
         task = progress.add_task('', keys=[])
         cur_keys = set()
-        to_tensor = ToTensor()
         for img in streamer.stream(stop_event):
-            img = to_tensor(img)
+            img = image_to_tensor(img)
             pred = model(torch.reshape(img, (1,) + img.shape))[0]
             keys = set(list(str(directions_to_keys(pred)[0])))
             to_press = keys - cur_keys

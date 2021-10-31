@@ -1,12 +1,11 @@
 import torch
 from torch import nn
 from torchsummary import summary
-
-from helper.data_format import key_map
+from helper.data_format import recording_keys, img_size
 
 
 class PlayModel(nn.Module):
-    def __init__(self):
+    def __init__(self, num_outputs: int = len(recording_keys)):
         super(PlayModel, self).__init__()
         self.cnn_stack = nn.Sequential(
             nn.Conv2d(3, 16, kernel_size=(8, 8), stride=(2, 2), padding=2),
@@ -23,19 +22,24 @@ class PlayModel(nn.Module):
             nn.Linear(1024, 1024),
             nn.Dropout(p=0.3),
             nn.Sigmoid(),
-            nn.Linear(1024, key_map.shape[0]),
-            nn.Sigmoid()
         )
+        self.output_stacks = nn.ModuleList([nn.Sequential(
+            nn.Linear(1024, 128),
+            nn.Dropout(p=0.3),
+            nn.Sigmoid(),
+            nn.Linear(128, 1),
+            nn.Sigmoid(),
+        ) for _ in range(num_outputs)])
 
     def forward(self, x: torch.Tensor):
         x = self.cnn_stack(x)
         x = torch.flatten(x, start_dim=1)
         x = self.ann_stack(x)
-        return x
+        return torch.stack([torch.reshape(output_stack(x), shape=(-1,)) for output_stack in self.output_stacks], dim=-1)
 
 
 if __name__ == '__main__':
     model = PlayModel().to('cuda')
-    summary(model, (3, 108, 192), batch_size=64)
-    test = torch.rand(100, 3, 108, 192, device='cuda')
-    print(model(test))
+    summary(model, img_size.tensor_shape(), batch_size=64)
+    test = torch.rand(100, *img_size.tensor_shape(), device='cuda')
+    print(model(test)[0].shape)

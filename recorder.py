@@ -6,12 +6,13 @@ import numpy as np
 from datetime import datetime
 import keyboard
 from dataclasses import dataclass, field
-from typing import List, Tuple, Set
+from typing import List, Set
 from rich.progress import Progress, TextColumn, TimeElapsedColumn
 from helper.data_format import np_keys_filename, avi_video_filename, np_screens_filename, recording_keys, img_size, \
-    keys_to_directions
+    ImageFormat
 import psutil
 from helper.screen_streamer import ScreenStreamer
+from helper.transforms import keys_to_directions
 
 
 @dataclass
@@ -38,7 +39,7 @@ class DatasetItem:
 class Recorder:
     save_dir: str
     max_fps: int = 30
-    screen_res: Tuple[int] = img_size
+    screen_res: ImageFormat = img_size
     recording_keys: Set[str] = field(default_factory=lambda: set(recording_keys))
     finish_record_key: str = 'space'
     discard_tail_sec: float = 3  # discard last N seconds of content, so that failing movement won't be learnt by model.
@@ -124,17 +125,17 @@ class Recorder:
 
     def __save_np_screens(self, dataset: List[DatasetItem], folder: str):
         np.save(os.path.join(self.save_dir, folder, np_screens_filename),
-                np.array(list(map(lambda x: x.screen, dataset))))
+                np.stack(list(map(lambda x: x.screen, dataset))))
 
     def __save_np_keys(self, dataset: List[DatasetItem], folder: str):
         np.save(os.path.join(self.save_dir, folder, np_keys_filename),
-                np.array(list(map(lambda x: keys_to_directions(x.key_codes), dataset)), dtype=bool))
+                np.stack(list(map(lambda x: keys_to_directions(x.key_codes), dataset))))
 
     def __save_avi_video(self, dataset: List[DatasetItem], folder: str):
         avg_fps = len(dataset) / (dataset[-1].timestamp - dataset[0].timestamp)
         print('average fps =', round(avg_fps, 2))
         video_writer = cv2.VideoWriter(os.path.join(self.save_dir, folder, avi_video_filename),
-                                       cv2.VideoWriter_fourcc(*"XVID"), avg_fps, self.screen_res)
+                                       cv2.VideoWriter_fourcc(*"XVID"), avg_fps, self.screen_res.resolution_shape())
         for item in dataset:
             video_writer.write(item.screen)
         video_writer.release()

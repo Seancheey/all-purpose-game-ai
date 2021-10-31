@@ -5,7 +5,8 @@ import numpy as np
 from cv2 import cv2
 from ratelimit import rate_limited, sleep_and_retry
 
-from helper.data_format import np_keys_filename, np_screens_filename, directions_to_keys
+from helper.data_format import np_keys_filename, np_screens_filename
+from helper.transforms import directions_to_keys
 
 
 @dataclass

@@ -5,17 +5,16 @@ from typing import Tuple, List
 import numpy as np
 from cv2 import cv2
 from ratelimit import sleep_and_retry, rate_limited
-from rich.progress import Progress, TextColumn, TimeElapsedColumn
 from screeninfo import screeninfo
 
-from helper.data_format import img_size
+from helper.data_format import img_size, ImageFormat
 from mss import mss
 
 
 @dataclass
 class ScreenStreamer:
     max_fps: int = 30
-    screen_res: Tuple[int] = img_size
+    screen_res: ImageFormat = img_size
 
     def stream(self, stop_event, progress_bar=None) -> List[np.ndarray]:
         """
@@ -26,9 +25,9 @@ class ScreenStreamer:
         assert len(monitors) > 0, OSError('No Monitor Detected.')
         monitor = monitors[0]
 
-        down_sample_factor = min(monitor.width // self.screen_res[1], monitor.height // self.screen_res[1])
-        width_diff = (monitor.width - down_sample_factor * self.screen_res[0])
-        height_diff = (monitor.height - down_sample_factor * self.screen_res[1])
+        down_sample_factor = min(monitor.width // self.screen_res.width, monitor.height // self.screen_res.height)
+        width_diff = (monitor.width - down_sample_factor * self.screen_res.width)
+        height_diff = (monitor.height - down_sample_factor * self.screen_res.height)
         w_start, w_end = width_diff // 2, monitor.width - width_diff // 2
         h_start, h_end = height_diff // 2, monitor.height - height_diff // 2
 
