@@ -12,10 +12,9 @@ import psutil
 from cv2 import cv2
 from rich.progress import Progress, TextColumn, TimeElapsedColumn
 
-from helper.data_format import np_keys_filename, avi_video_filename, np_screens_filename, img_size
+from helper.data_format import np_keys_filename, avi_video_filename, np_screens_filename
 from helper.screen_streamer import ScreenStreamer
 from helper.transforms import KeyTransformer
-from helper.window_region import WindowRegion
 
 
 @dataclass
@@ -47,13 +46,9 @@ class Recorder:
     save_dir: str
     recording_keys: Set[str]
     key_transformer: KeyTransformer
+    screen_streamer: ScreenStreamer
     discard_tail_sec: float = 3  # discard last N seconds of content, so that failing movement won't be learnt by model.
     key_recording_delay_sec: float = -0.010  # record key events N sec earlier to compensate for delay
-    screen_streamer: ScreenStreamer = field(default_factory=lambda: ScreenStreamer(
-        max_fps=30,
-        output_img_format=img_size,
-        record_window_region=WindowRegion.from_first_monitor()
-    ))
     __finish_record_event: Event = field(default_factory=lambda: Event())
 
     def record(self):

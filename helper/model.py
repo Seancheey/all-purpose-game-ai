@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from torchsummary import summary
 
-from helper.data_format import img_size
+from helper.data_format import ImageFormat
 
 
 class PlayModel(nn.Module):
@@ -41,6 +41,7 @@ class PlayModel(nn.Module):
 
 if __name__ == '__main__':
     model = PlayModel(num_outputs=4).to('cuda')
+    img_size = ImageFormat(width=192, height=108, channel=3)
     summary(model, img_size.tensor_shape(), batch_size=64)
     test = torch.rand(100, *img_size.tensor_shape(), device='cuda')
     print(model(test)[0].shape)

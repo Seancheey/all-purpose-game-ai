@@ -1,5 +1,3 @@
-# data format configs
-
 from dataclasses import dataclass
 
 
@@ -25,8 +23,6 @@ class ImageFormat:
         return self.np_shape()[item]
 
 
-img_size = ImageFormat(width=192, height=108, channel=3)
-recording_keys = ['w', 'a', 's', 'd']
 np_keys_filename = 'keys.npy'
 np_screens_filename = 'screens.npy'
 avi_video_filename = 'video.avi'

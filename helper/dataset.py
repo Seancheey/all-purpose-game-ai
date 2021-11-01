@@ -6,7 +6,7 @@ from imblearn.over_sampling import RandomOverSampler
 from torch.utils.data import Dataset
 from torch.utils.data.dataset import T_co
 
-from helper.data_format import np_keys_filename, np_screens_filename, img_size
+from helper.data_format import np_keys_filename, np_screens_filename
 from helper.transforms import image_to_tensor, KeyTransformer
 
 
@@ -33,10 +33,11 @@ class LineaDataset(Dataset):
         # sampler doesn't support multi-label input, so transform keys to ordinal encoding first
         self.keys = np.fromiter((self.key_transformer.directions_to_ordinal(d) for d in self.keys), np.int8)
         # sampler doesn't support multi-dimension input, so reshape image first
+        screen_shape = self.screens.shape[1:]
         self.screens = self.screens.reshape((len(self.screens), -1))
 
         sm = RandomOverSampler(random_state=seed)
         self.screens, self.keys = sm.fit_resample(self.screens, self.keys)
 
-        self.screens = self.screens.reshape((-1,) + img_size.np_shape())
+        self.screens = self.screens.reshape((-1,) + screen_shape)
         self.keys = np.stack([self.key_transformer.ordinal_to_directions(o) for o in self.keys])
