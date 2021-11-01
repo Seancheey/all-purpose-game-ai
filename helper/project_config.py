@@ -26,7 +26,7 @@ class ProjectConfig:
     train_log_dir: str
     model_class: Callable[[], torch.nn.Module]
     model_path: str
-    record_window_region: WindowRegion
+    record_window_region_func: Callable[[], WindowRegion]
     start_record_key: str
     stop_record_key: str
     save_record_key: str
@@ -78,7 +78,7 @@ class ProjectConfig:
     def _provide_screen_streamer(self) -> ScreenStreamer:
         return ScreenStreamer(
             max_fps=self.max_record_fps,
-            record_window_region=self.record_window_region,
+            record_window_region=self.record_window_region_func(),
             output_img_format=self.img_format,
         )
 
