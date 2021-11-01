@@ -1,21 +1,21 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import List
-from mss import mss
+
 import numpy as np
 from cv2 import cv2
+from mss import mss
 from ratelimit import sleep_and_retry, rate_limited
-from screeninfo import screeninfo
 from rich.progress import Progress
 
+from helper.data_format import ImageFormat
 from helper.window_region import WindowRegion
-from helper.data_format import img_size, ImageFormat
 
 
 @dataclass
 class ScreenStreamer:
+    output_img_format: ImageFormat
     max_fps: int = 30
-    output_img_format: ImageFormat = img_size
     record_window_region: WindowRegion = field(default_factory=lambda: WindowRegion.from_first_monitor())
 
     def stream(self, stop_event, progress_bar: Progress = None) -> List[np.ndarray]:
@@ -27,8 +27,8 @@ class ScreenStreamer:
                                  self.record_window_region.height // self.output_img_format.height)
         width_diff = (self.record_window_region.width - down_sample_factor * self.output_img_format.width)
         height_diff = (self.record_window_region.height - down_sample_factor * self.output_img_format.height)
-        w_start, w_end = width_diff // 2, self.record_window_region.width - width_diff // 2
-        h_start, h_end = height_diff // 2, self.record_window_region.height - height_diff // 2
+        w_start, w_end = width_diff // 2, width_diff // 2 + down_sample_factor * self.output_img_format.width
+        h_start, h_end = height_diff // 2, height_diff // 2 + down_sample_factor * self.output_img_format.height
 
         screen_grabber = mss()
         bounding_box = self.record_window_region.to_mss_bounding_box()
