@@ -26,7 +26,6 @@ class WindowRegion:
         import win32gui
         handle = win32gui.FindWindow(None, window_title)
         rect = win32gui.GetWindowRect(handle)
-        print(rect)
         return WindowRegion(x=rect[0], y=rect[1], width=rect[2] - rect[0], height=rect[3] - rect[1])
 
     def to_mss_bounding_box(self) -> Dict[str, int]:
