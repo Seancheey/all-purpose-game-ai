@@ -14,7 +14,7 @@ linea_config = ProjectConfig(
     record_window_region_func=WindowRegion.from_first_monitor,
     model_path=os.path.join(os.getcwd(), 'linea', 'model.pth'),
     model_class=lambda: PlayModel(num_outputs=4),
-    max_record_fps=30,
+    max_record_fps=60,
     stop_train_key='ctrl+q',
     save_record_key='space',
     start_apply_key='e',
@@ -33,7 +33,7 @@ super_hexagon_config = ProjectConfig(
     record_window_region_func=lambda: WindowRegion.from_window_with_name('Super Hexagon'),
     model_path=os.path.join(os.getcwd(), 'super_hexagon', 'model.pth'),
     model_class=lambda: PlayModel(num_outputs=2),
-    max_record_fps=30,
+    max_record_fps=60,
     stop_train_key='ctrl+q',
     save_record_key='space',
     start_apply_key='e',
@@ -43,4 +43,4 @@ super_hexagon_config = ProjectConfig(
     data_visualize_fps=20,
 )
 
-config = super_hexagon_config
+config = linea_config
