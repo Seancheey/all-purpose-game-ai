@@ -5,14 +5,13 @@ import keyboard
 import torch
 from rich.progress import Progress
 
-from helper.model import PlayModel
 from helper.screen_streamer import ScreenStreamer
 from helper.transforms import image_to_tensor, KeyTransformer
 
 
 @dataclass
 class GameAiApplier:
-    trained_model: PlayModel
+    trained_model: torch.nn.Module
     screen_streamer: ScreenStreamer
     key_transformer: KeyTransformer
     start_apply_hotkey: str

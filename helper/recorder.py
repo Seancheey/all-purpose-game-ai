@@ -1,4 +1,5 @@
 import os.path
+import pathlib
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -170,8 +171,7 @@ class RepeatingRecorder:
         keyboard.wait(self.start_key)
         print(f'start recording...')
         print(f'press "{self.stop_key}" to exit, press "{self.save_key}" to save and start next recording')
-        if not os.path.exists(self.recorder.save_dir):
-            os.mkdir(self.recorder.save_dir)
+        pathlib.Path(self.recorder.save_dir).mkdir(parents=True, exist_ok=True)
         while True:
             self.recorder.record()
 

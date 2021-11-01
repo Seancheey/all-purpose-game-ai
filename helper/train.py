@@ -3,6 +3,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from threading import Event
+from typing import Sized
 
 import keyboard
 import torch
@@ -10,9 +11,6 @@ from tensorboard import program
 from torch import nn
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-
-from helper.dataset import LineaDataset
-from helper.model import PlayModel
 
 
 @dataclass
@@ -44,17 +42,17 @@ class Summarizer:
 
 @dataclass
 class Trainer:
-    model: PlayModel
-    dataset: LineaDataset
+    model: nn.Module
+    dataset: torch.utils.data.Dataset
     train_name: str
     model_save_path: str
+    train_log_dir: str
     learning_rate = 0.001
     batch_size = 200
     epochs = 500
     device = 'cuda'
     optimizer_func = torch.optim.Adam
     loss_fn = nn.BCELoss()
-    log_dir = os.path.join(os.getcwd(), 'runs')
     train_test_split_ratio = 0.8
     stop_train_key = 'ctrl+q'
 
@@ -68,14 +66,18 @@ class Trainer:
     def train(self):
         model = self.model.to(self.device)
         # split data to train&test
-        train_data_size = round(len(self.dataset) * self.train_test_split_ratio)
-        test_data_size = len(self.dataset) - train_data_size
+        if isinstance(self.dataset, Sized):
+            data_len = len(self.dataset)
+        else:
+            data_len = sum((1 for _ in self.dataset))
+        train_data_size = round(data_len * self.train_test_split_ratio)
+        test_data_size = data_len - train_data_size
         train_dataset, test_dataset = torch.utils.data.random_split(self.dataset, [train_data_size, test_data_size])
         train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
         # tensorboard summary writer
         summarizer = Summarizer(
             SummaryWriter(
-                os.path.join(self.log_dir, self.train_name + "-" + datetime.now().strftime('%Y%m%d-%H-%M-%S'))))
+                os.path.join(self.train_log_dir, self.train_name + "-" + datetime.now().strftime('%Y%m%d-%H-%M-%S'))))
         summarizer.add_graph(model, next(iter(train_loader))[0])
 
         # stop event listening setup
@@ -109,7 +111,7 @@ class Trainer:
 
     def start_tensor_board(self):
         tb = program.TensorBoard()
-        tb.configure(argv=[None, '--logdir', self.log_dir])
+        tb.configure(argv=[None, '--logdir', self.train_log_dir])
         url = tb.launch()
         print(f'TensorBoard starting at {url}')
 

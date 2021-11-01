@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Callable
 
 import torch
 
@@ -7,7 +7,6 @@ from helper.data_format import ImageFormat
 from helper.data_visualizer import DataVisualizer
 from helper.dataset import LineaDataset
 from helper.game_ai_applier import GameAiApplier
-from helper.model import PlayModel
 from helper.recorder import RepeatingRecorder, Recorder
 from helper.screen_streamer import ScreenStreamer
 from helper.train import Trainer
@@ -24,6 +23,8 @@ class ProjectConfig:
     recording_keys: List[str]
     img_format: ImageFormat
     data_dir: str
+    train_log_dir: str
+    model_class: Callable[[], torch.nn.Module]
     model_path: str
     record_window_region: WindowRegion
     start_record_key: str
@@ -54,7 +55,8 @@ class ProjectConfig:
             train_name=self.train_name,
             dataset=self._provide_dataset(),
             model=self._provide_raw_model(),
-            model_save_path=self.model_path
+            model_save_path=self.model_path,
+            train_log_dir=self.train_log_dir,
         )
 
     def provide_ai_applier(self) -> GameAiApplier:
@@ -83,10 +85,10 @@ class ProjectConfig:
     def _provide_dataset(self) -> LineaDataset:
         return LineaDataset(self.data_dir, self._provide_key_transformer())
 
-    def _provide_raw_model(self) -> PlayModel:
-        return PlayModel(num_outputs=len(self.recording_keys))
+    def _provide_raw_model(self) -> torch.nn.Module:
+        return self.model_class()
 
-    def _provide_trained_model(self) -> PlayModel:
+    def _provide_trained_model(self) -> torch.nn.Module:
         model = self._provide_raw_model()
         model.load_state_dict(torch.load(self.model_path))
         return model
