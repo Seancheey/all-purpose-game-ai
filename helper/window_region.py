@@ -2,6 +2,7 @@ import platform
 from dataclasses import dataclass
 from typing import Dict
 
+import pywintypes
 from screeninfo import screeninfo
 
 
@@ -24,22 +25,35 @@ class WindowRegion:
         if platform.system() != 'Windows':
             raise NotImplementedError("Systems other than Windows are not support for getting window region by name.")
         import win32gui
-        import pywintypes
-        handle = win32gui.FindWindow(None, window_title)
+        import ctypes
         try:
-            rect = win32gui.GetWindowRect(handle)
-        except pywintypes.error:
-            rect = None
-        if rect is None:
-            raise OSError(f"Unable to find the window with title \"{window_title}\"")
-        return WindowRegion(x=rect[0], y=rect[1], width=rect[2] - rect[0], height=rect[3] - rect[1])
+            window = win32gui.FindWindow(None, window_title)
+            desktop = win32gui.GetDC(window)
+            gdi32 = ctypes.WinDLL("gdi32")
+            visual_pixel = gdi32.GetDeviceCaps(desktop, 10)  # flag value for getting visual pixel height
+            real_pixel = gdi32.GetDeviceCaps(desktop, 117)  # flag value for getting real pixel height
+            dpi_scale = real_pixel / visual_pixel
 
-    def scale(self, ratio: float):
+            rect = win32gui.GetWindowRect(window)
+            return WindowRegion(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]).scale_dpi(dpi_scale)
+        except pywintypes.error:
+            raise OSError(f"Unable to find the window with title \"{window_title}\"")
+
+    def scale_size(self, ratio: float):
         new_width = round(self.width * ratio)
         new_height = round(self.height * ratio)
-        new_x = self.x - new_width // 2
-        new_y = self.y - new_height // 2
-        return WindowRegion(x=new_x, y=new_y, width=new_width, height=new_height)
+        new_x = self.x - (new_width - self.width) // 2
+        new_y = self.y - (new_height - self.height) // 2
+        new_region = WindowRegion(x=new_x, y=new_y, width=new_width, height=new_height)
+        return new_region
+
+    def scale_dpi(self, dpi_scale: float):
+        return WindowRegion(
+            x=int(self.x * dpi_scale),
+            y=int(self.y * dpi_scale),
+            width=int(self.width * dpi_scale),
+            height=int(self.height * dpi_scale)
+        )
 
     def to_mss_bounding_box(self) -> Dict[str, int]:
         return {
