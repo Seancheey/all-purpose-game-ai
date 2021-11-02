@@ -58,12 +58,15 @@ class Trainer:
 
     __stop_event: Event = field(default_factory=lambda: Event())
 
-    def train_and_save(self):
+    def train_and_save(self, auto_save_best: bool = True):
         self.start_tensor_board()
-        self.train()
-        self.save_model()
+        if auto_save_best:
+            self.train(auto_save_best=True)
+        else:
+            self.train(auto_save_best=False)
+            self.save_model()
 
-    def train(self):
+    def train(self, auto_save_best: bool = True):
         model = self.model.to(self.device)
         # split data to train&test
         if isinstance(self.dataset, Sized):
@@ -86,6 +89,8 @@ class Trainer:
         print(f'Training started. Press {self.stop_train_key} to stop.')
 
         optimizer = self.optimizer_func(model.parameters(), lr=self.learning_rate)
+
+        cur_min_loss = 23 * 10 ** 8
         for epoch in range(self.epochs):
             time.sleep(0.1)  # leave a bit time for keyboard event loop to react
             if self.__stop_event.is_set():
@@ -107,7 +112,10 @@ class Trainer:
                 test_loss_sum = 0
                 for X, y in DataLoader(test_dataset):
                     test_loss_sum += self.loss_fn(model(X), y)
-                summarizer.add_test_loss(test_loss_sum / len(test_dataset))
+                mean_loss = test_loss_sum / len(test_dataset)
+                summarizer.add_test_loss(mean_loss)
+                if auto_save_best and mean_loss < cur_min_loss:
+                    self.save_model()
 
     def start_tensor_board(self):
         tb = program.TensorBoard()
