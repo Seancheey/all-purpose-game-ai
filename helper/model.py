@@ -14,20 +14,22 @@ class PlayModel(nn.Module):
             nn.Conv2d(16, 32, kernel_size=(3, 3), padding=1),
             nn.MaxPool2d(kernel_size=(2, 2)),
             nn.Conv2d(32, 64, kernel_size=(3, 3), padding=1),
+            nn.MaxPool2d(kernel_size=(2, 2)),
+            nn.Conv2d(64, 128, kernel_size=(3, 3), padding=1),
             nn.MaxPool2d(kernel_size=(2, 2))
         )
         self.ann_stack = nn.Sequential(
-            nn.Linear(4224, 1024),
-            nn.Dropout(p=0.4),
-            nn.ReLU(),
+            nn.Linear(1920, 1024),
+            nn.Dropout(p=0.5),
+            nn.GELU(),
             nn.Linear(1024, 1024),
-            nn.Dropout(p=0.4),
-            nn.Sigmoid(),
+            nn.Dropout(p=0.5),
+            nn.GELU(),
         )
         self.output_stacks = nn.ModuleList([nn.Sequential(
             nn.Linear(1024, 128),
             nn.Dropout(p=0.4),
-            nn.Sigmoid(),
+            nn.GELU(),
             nn.Linear(128, 1),
             nn.Sigmoid(),
         ) for _ in range(num_outputs)])

@@ -11,7 +11,7 @@ linea_config = ProjectConfig(
     img_format=ImageFormat(width=192, height=108, channel=3),
     data_dir=os.path.join(os.getcwd(), 'linea', 'data'),
     train_log_dir=os.path.join(os.getcwd(), 'linea', 'runs'),
-    train_name='multi-class-train',
+    train_name='gelu-train',
     record_window_region_func=WindowRegion.from_first_monitor,
     model_path=os.path.join(os.getcwd(), 'linea', 'model.pth'),
     model_class=lambda: PlayModel(num_outputs=4),
