@@ -3,15 +3,16 @@ from typing import List, Callable
 
 import numpy as np
 import torch
+import torchvision
 
 from helper.data_format import ImageFormat
 from helper.data_visualizer import DataVisualizer
 from helper.dataset import VideoKeyboardDataset
 from helper.game_ai_applier import GameAiApplier
+from helper.key_transformer import KeyTransformer
 from helper.recorder import RepeatingRecorder, Recorder
 from helper.screen_streamer import ScreenStreamer
 from helper.train import Trainer
-from helper.transforms import KeyTransformer
 from helper.window_region import WindowRegion
 
 
@@ -37,7 +38,8 @@ class ProjectConfig:
     train_name: str
     data_visualize_fps: int
     max_record_fps: int
-    image_filter_func: Callable[[np.ndarray], np.ndarray] = None
+    recording_image_filter_func: Callable[[np.ndarray], np.ndarray] = None
+    screen_to_tensor_func: Callable[[np.ndarray], torch.Tensor] = torchvision.transforms.ToTensor()
 
     def provide_recorder(self) -> RepeatingRecorder:
         return RepeatingRecorder(
@@ -68,6 +70,7 @@ class ProjectConfig:
             stop_apply_hotkey=self.stop_apply_key,
             trained_model=self._provide_trained_model(),
             key_transformer=self._provide_key_transformer(),
+            screen_to_tensor_func=self.screen_to_tensor_func
         )
 
     def provide_data_visualizer(self) -> DataVisualizer:
@@ -82,11 +85,11 @@ class ProjectConfig:
             max_fps=self.max_record_fps,
             record_window_region=self.record_window_region_func(),
             output_img_format=self.img_format,
-            image_filter_func=self.image_filter_func
+            recording_img_transform_func=self.recording_image_filter_func
         )
 
     def _provide_dataset(self) -> VideoKeyboardDataset:
-        return VideoKeyboardDataset(self.data_dir, self._provide_key_transformer())
+        return VideoKeyboardDataset(self.data_dir, self._provide_key_transformer(), self.screen_to_tensor_func)
 
     def _provide_raw_model(self) -> torch.nn.Module:
         return self.model_class()

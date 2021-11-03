@@ -3,9 +3,6 @@ from typing import List, Iterable, Union
 
 import numpy as np
 import torch
-from torchvision.transforms import ToTensor
-
-image_to_tensor = ToTensor()
 
 
 @dataclass()

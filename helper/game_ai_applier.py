@@ -1,13 +1,15 @@
+from collections import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from threading import Event
 
 import keyboard
+import numpy as np
 import torch
 from rich.progress import Progress
 
+from helper.key_transformer import KeyTransformer
 from helper.screen_streamer import ScreenStreamer
-from helper.transforms import image_to_tensor, KeyTransformer
 
 
 @dataclass
@@ -15,6 +17,7 @@ class GameAiApplier:
     trained_model: torch.nn.Module
     screen_streamer: ScreenStreamer
     key_transformer: KeyTransformer
+    screen_to_tensor_func: Callable[np.ndarray, torch.Tensor]
     start_apply_hotkey: str
     stop_apply_hotkey: str
     __stop_event: Event = field(default_factory=lambda: Event())
@@ -34,7 +37,7 @@ class GameAiApplier:
                 task = progress.add_task('', fps=None, keys=[])
                 cur_keys = set()
                 for img in self.screen_streamer.stream(self.__stop_event):
-                    img = image_to_tensor(img)
+                    img = self.screen_to_tensor_func(img)
                     pred = self.trained_model(torch.reshape(img, (1,) + img.shape))[0]
                     keys = set(self.key_transformer.pred_to_keys(pred))
                     to_press = keys - cur_keys

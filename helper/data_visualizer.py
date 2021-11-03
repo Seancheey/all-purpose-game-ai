@@ -6,7 +6,7 @@ from cv2 import cv2
 from ratelimit import rate_limited, sleep_and_retry
 
 from helper.data_format import np_keys_filename, np_screens_filename
-from helper.transforms import KeyTransformer
+from helper.key_transformer import KeyTransformer
 
 
 @dataclass
