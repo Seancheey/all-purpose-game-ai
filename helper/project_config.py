@@ -6,7 +6,7 @@ import torch
 
 from helper.data_format import ImageFormat
 from helper.data_visualizer import DataVisualizer
-from helper.dataset import LineaDataset
+from helper.dataset import VideoKeyboardDataset
 from helper.game_ai_applier import GameAiApplier
 from helper.recorder import RepeatingRecorder, Recorder
 from helper.screen_streamer import ScreenStreamer
@@ -85,8 +85,8 @@ class ProjectConfig:
             image_filter_func=self.image_filter_func
         )
 
-    def _provide_dataset(self) -> LineaDataset:
-        return LineaDataset(self.data_dir, self._provide_key_transformer())
+    def _provide_dataset(self) -> VideoKeyboardDataset:
+        return VideoKeyboardDataset(self.data_dir, self._provide_key_transformer())
 
     def _provide_raw_model(self) -> torch.nn.Module:
         return self.model_class()

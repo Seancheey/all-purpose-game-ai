@@ -10,7 +10,7 @@ from helper.data_format import np_keys_filename, np_screens_filename
 from helper.transforms import image_to_tensor, KeyTransformer
 
 
-class LineaDataset(Dataset):
+class VideoKeyboardDataset(Dataset):
     def __init__(self, data_dir, key_transformer: KeyTransformer, seed=0):
         self.key_transformer = key_transformer
         record_dirs = list(map(lambda path: os.path.join(data_dir, path), os.listdir(data_dir)))
