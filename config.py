@@ -1,3 +1,3 @@
 from example_config import *
 
-config = linea_config('Boktipset')
+config = super_hexagon_config
