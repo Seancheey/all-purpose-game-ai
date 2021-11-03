@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import List
+from typing import List, Callable
 
 import numpy as np
 from cv2 import cv2
@@ -16,6 +16,7 @@ from helper.window_region import WindowRegion
 class ScreenStreamer:
     output_img_format: ImageFormat
     max_fps: int = 30
+    image_filter_func: Callable[[np.ndarray], np.ndarray] = None
     record_window_region: WindowRegion = field(default_factory=lambda: WindowRegion.from_first_monitor())
 
     def stream(self, stop_event, progress_bar: Progress = None) -> List[np.ndarray]:
@@ -39,7 +40,11 @@ class ScreenStreamer:
             # noinspection PyTypeChecker
             raw_img = np.array(screen_grabber.grab(bounding_box))
             # capture screen, then down-sample + trim the sides to meet specified resolution. output color is RGBA.
-            return raw_img[h_start:h_end:down_sample_factor, w_start:w_end:down_sample_factor]
+            zoomed_img = raw_img[h_start:h_end:down_sample_factor, w_start:w_end:down_sample_factor]
+            if self.image_filter_func:
+                return self.image_filter_func(zoomed_img)
+            else:
+                return zoomed_img
 
         last_timestamp = datetime.now().timestamp()
 

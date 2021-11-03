@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Callable
 
+import numpy as np
 import torch
 
 from helper.data_format import ImageFormat
@@ -36,6 +37,7 @@ class ProjectConfig:
     train_name: str
     data_visualize_fps: int
     max_record_fps: int
+    image_filter_func: Callable[[np.ndarray], np.ndarray] = None
 
     def provide_recorder(self) -> RepeatingRecorder:
         return RepeatingRecorder(
@@ -80,6 +82,7 @@ class ProjectConfig:
             max_fps=self.max_record_fps,
             record_window_region=self.record_window_region_func(),
             output_img_format=self.img_format,
+            image_filter_func=self.image_filter_func
         )
 
     def _provide_dataset(self) -> LineaDataset:
