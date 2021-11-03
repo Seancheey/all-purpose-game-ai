@@ -20,16 +20,18 @@ class PlayModel(nn.Module):
         )
         self.ann_stack = nn.Sequential(
             nn.Linear(1920, 1024),
-            nn.Dropout(p=0.5),
+            nn.BatchNorm1d(1024),
             nn.GELU(),
+            nn.Dropout(p=0.5),
             nn.Linear(1024, 1024),
-            nn.Dropout(p=0.5),
+            nn.BatchNorm1d(1024),
             nn.GELU(),
+            nn.Dropout(p=0.5),
         )
         self.output_stacks = nn.ModuleList([nn.Sequential(
             nn.Linear(1024, 128),
-            nn.Dropout(p=0.4),
             nn.GELU(),
+            nn.Dropout(p=0.4),
             nn.Linear(128, 1),
             nn.Sigmoid(),
         ) for _ in range(num_outputs)])

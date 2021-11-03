@@ -30,6 +30,7 @@ class GameAiApplier:
         last_timestamp = datetime.now().timestamp()
         with Progress('Prediction: fps: {task.fields[fps]} keys: {task.fields[keys]}') as progress:
             with torch.no_grad():
+                self.trained_model.eval()
                 task = progress.add_task('', fps=None, keys=[])
                 cur_keys = set()
                 for img in self.screen_streamer.stream(self.__stop_event):

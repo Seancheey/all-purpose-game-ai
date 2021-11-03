@@ -14,7 +14,7 @@ def linea_config(level):
         img_format=ImageFormat(width=192, height=108, channel=3),
         data_dir=os.path.join(folder, 'data'),
         train_log_dir=os.path.join(folder, 'runs'),
-        train_name='gelu-train',
+        train_name='batch-norm-train',
         record_window_region_func=WindowRegion.from_first_monitor,
         model_path=os.path.join(folder, 'model.pth'),
         model_class=lambda: PlayModel(num_outputs=4),
