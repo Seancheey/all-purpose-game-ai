@@ -77,6 +77,7 @@ class ProjectConfig:
         return DataVisualizer(
             data_dir=self.data_dir,
             key_transformer=self._provide_key_transformer(),
+            img_format=self.img_format,
             fps=self.data_visualize_fps
         )
 
