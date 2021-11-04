@@ -36,7 +36,7 @@ super_hexagon_config = ProjectConfig(
     img_format=ImageFormat(width=256, height=256, channel=1),
     data_dir=os.path.join(os.getcwd(), 'super_hexagon', 'data'),
     train_log_dir=os.path.join(os.getcwd(), 'super_hexagon', 'runs'),
-    train_name='batch-norm-train',
+    train_name='cnn-batch-norm-train',
     record_window_region_func=lambda: WindowRegion.from_window_with_name('Super Hexagon').scale_size(0.85),
     model_path=os.path.join(os.getcwd(), 'super_hexagon', 'model.pth'),
     model_class=SuperHexagonModel,

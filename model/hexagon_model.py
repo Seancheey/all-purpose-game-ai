@@ -5,7 +5,7 @@ from torch import nn
 class SuperHexagonModel(nn.Module):
 
     @staticmethod
-    def basic_fc(num_input, num_output):
+    def fc_block(num_input, num_output):
         return nn.Sequential(
             nn.Linear(num_input, num_output),
             nn.BatchNorm1d(num_output),
@@ -13,27 +13,31 @@ class SuperHexagonModel(nn.Module):
             nn.Dropout(p=0.5),
         )
 
+    @staticmethod
+    def conv_block(channel_in, channel_out, kernel_size, stride=(1, 1), padding=1):
+        return nn.Sequential(
+            nn.Conv2d(channel_in, channel_out, kernel_size=kernel_size, stride=stride, padding=padding),
+            nn.BatchNorm2d(channel_out),
+            nn.GELU(),
+            nn.MaxPool2d(kernel_size=(2, 2))
+        )
+
     def __init__(self):
         super(SuperHexagonModel, self).__init__()
         self.cnn_stack = nn.Sequential(
-            nn.Conv2d(1, 8, kernel_size=(8, 8), stride=(2, 2), padding=2),
-            nn.MaxPool2d(kernel_size=(2, 2)),
-            nn.Conv2d(8, 16, kernel_size=(3, 3), padding=1),
-            nn.MaxPool2d(kernel_size=(2, 2)),
-            nn.Conv2d(16, 32, kernel_size=(3, 3), padding=1),
-            nn.MaxPool2d(kernel_size=(2, 2)),
-            nn.Conv2d(32, 64, kernel_size=(3, 3), padding=1),
-            nn.MaxPool2d(kernel_size=(2, 2)),
-            nn.Conv2d(64, 128, kernel_size=(3, 3), padding=1),
-            nn.MaxPool2d(kernel_size=(2, 2)),
+            SuperHexagonModel.conv_block(1, 8, kernel_size=(8, 8), stride=(2, 2), padding=2),
+            SuperHexagonModel.conv_block(8, 16, kernel_size=(3, 3), padding=1),
+            SuperHexagonModel.conv_block(16, 32, kernel_size=(3, 3), padding=1),
+            SuperHexagonModel.conv_block(32, 64, kernel_size=(3, 3), padding=1),
+            SuperHexagonModel.conv_block(64, 128, kernel_size=(3, 3), padding=1),
         )
         self.ann_stack = nn.Sequential(
-            SuperHexagonModel.basic_fc(1152, 1024),
-            SuperHexagonModel.basic_fc(1024, 1024),
-            SuperHexagonModel.basic_fc(1024, 1024)
+            SuperHexagonModel.fc_block(1152, 1024),
+            SuperHexagonModel.fc_block(1024, 1024),
+            SuperHexagonModel.fc_block(1024, 1024)
         )
         self.output_stacks = nn.ModuleList([nn.Sequential(
-            SuperHexagonModel.basic_fc(1024, 256),
+            SuperHexagonModel.fc_block(1024, 256),
             nn.Linear(256, 1),
             nn.Sigmoid(),
         )
