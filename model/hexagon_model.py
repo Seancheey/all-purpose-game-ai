@@ -29,6 +29,7 @@ class SuperHexagonModel(nn.Module):
         )
         self.ann_stack = nn.Sequential(
             SuperHexagonModel.basic_fc(1152, 1024),
+            SuperHexagonModel.basic_fc(1024, 1024),
             SuperHexagonModel.basic_fc(1024, 1024)
         )
         self.output_stacks = nn.ModuleList([nn.Sequential(
