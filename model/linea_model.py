@@ -1,8 +1,5 @@
 import torch
 from torch import nn
-from torchsummary import summary
-
-from helper.data_format import ImageFormat
 
 
 class LineaModel(nn.Module):
@@ -41,11 +38,3 @@ class LineaModel(nn.Module):
         x = torch.flatten(x, start_dim=1)
         x = self.ann_stack(x)
         return torch.stack([torch.reshape(output_stack(x), shape=(-1,)) for output_stack in self.output_stacks], dim=-1)
-
-
-if __name__ == '__main__':
-    model = LineaModel(num_outputs=4).to('cuda')
-    img_size = ImageFormat(width=192, height=108, channel=3)
-    summary(model, img_size.tensor_shape(), batch_size=64)
-    test = torch.rand(100, *img_size.tensor_shape(), device='cuda')
-    print(model(test)[0].shape)

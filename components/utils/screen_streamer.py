@@ -8,8 +8,8 @@ from mss import mss
 from ratelimit import sleep_and_retry, rate_limited
 from rich.progress import Progress
 
-from helper.data_format import ImageFormat
-from helper.window_region import WindowRegion
+from components.utils.image_format import ImageFormat
+from components.utils.window_region import WindowRegion
 
 
 @dataclass

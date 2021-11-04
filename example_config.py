@@ -2,9 +2,9 @@ import os
 
 from torchvision import transforms
 
-from helper.data_format import ImageFormat
-from helper.project_config import ProjectConfig
-from helper.window_region import WindowRegion
+from components.project_config import ProjectConfig
+from components.utils.image_format import ImageFormat
+from components.utils.window_region import WindowRegion
 from model.hexagon_model import SuperHexagonModel
 from model.linea_model import LineaModel
 

@@ -5,15 +5,15 @@ import numpy as np
 import torch
 import torchvision
 
-from helper.data_format import ImageFormat
-from helper.data_visualizer import DataVisualizer
-from helper.dataset import VideoKeyboardDataset
-from helper.game_ai_applier import GameAiApplier
-from helper.key_transformer import KeyTransformer
-from helper.recorder import RepeatingRecorder, Recorder
-from helper.screen_streamer import ScreenStreamer
-from helper.train import Trainer
-from helper.window_region import WindowRegion
+from components.data_visualizer import DataVisualizer
+from components.game_ai_applier import GameAiApplier
+from components.recorder import RepeatingRecorder, Recorder
+from components.train import Trainer
+from components.utils.dataset import VideoKeyboardDataset
+from components.utils.image_format import ImageFormat
+from components.utils.key_transformer import KeyTransformer
+from components.utils.screen_streamer import ScreenStreamer
+from components.utils.window_region import WindowRegion
 
 
 @dataclass

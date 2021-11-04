@@ -8,8 +8,8 @@ import numpy as np
 import torch
 from rich.progress import Progress
 
-from helper.key_transformer import KeyTransformer
-from helper.screen_streamer import ScreenStreamer
+from components.utils.key_transformer import KeyTransformer
+from components.utils.screen_streamer import ScreenStreamer
 
 
 @dataclass

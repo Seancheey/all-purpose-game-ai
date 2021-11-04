@@ -12,9 +12,9 @@ import psutil
 from cv2 import cv2
 from rich.progress import Progress, TextColumn, TimeElapsedColumn
 
-from helper.data_format import np_keys_filename, avi_video_filename, np_screens_filename
-from helper.key_transformer import KeyTransformer
-from helper.screen_streamer import ScreenStreamer
+from components.utils.image_format import np_keys_filename, avi_video_filename, np_screens_filename
+from components.utils.key_transformer import KeyTransformer
+from components.utils.screen_streamer import ScreenStreamer
 
 
 @dataclass

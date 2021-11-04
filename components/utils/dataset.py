@@ -8,8 +8,8 @@ from imblearn.over_sampling import RandomOverSampler
 from torch.utils.data import Dataset
 from torch.utils.data.dataset import T_co
 
-from helper.data_format import np_keys_filename, np_screens_filename
-from helper.key_transformer import KeyTransformer
+from components.utils.image_format import np_keys_filename, np_screens_filename
+from components.utils.key_transformer import KeyTransformer
 
 
 def over_sample_to_balance_labels(screen_dataset, key_dataset, key_transformer, seed):
