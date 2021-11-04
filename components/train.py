@@ -1,43 +1,15 @@
-import os
 import time
 from dataclasses import dataclass, field
-from datetime import datetime
 from threading import Event
-from typing import Sized
+from typing import Sized, Type
 
 import keyboard
 import torch
 from tensorboard import program
 from torch import nn
 from torch.utils.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
 
-
-@dataclass
-class Summarizer:
-    """
-    Writes various summary information about model to tensor board log, so it could be read be tensor board.
-    """
-    writer: SummaryWriter
-    train_loss_record_interval = 1
-    __train_loss_step = 0
-    __test_loss_step = 0
-    __train_loss_loop_i = 1
-
-    def add_graph(self, model, sample_data_input):
-        self.writer.add_graph(model, sample_data_input)
-
-    def add_train_loss(self, loss):
-        if self.__train_loss_loop_i < self.train_loss_record_interval:
-            self.__train_loss_loop_i += 1
-        else:
-            self.__train_loss_loop_i = 1
-            self.writer.add_scalar('train loss', loss, self.__train_loss_step)
-        self.__train_loss_step += 1
-
-    def add_test_loss(self, loss):
-        self.writer.add_scalar('test loss', loss, self.__test_loss_step)
-        self.__test_loss_step += 1
+from components.utils.tensor_board_summarizer import Summarizer
 
 
 @dataclass
@@ -47,41 +19,36 @@ class Trainer:
     train_name: str
     model_save_path: str
     train_log_dir: str
+    tensor_board_summarizer: Summarizer
     learning_rate = 0.001
     batch_size = 200
     epochs = 500
     device = 'cuda'
-    optimizer_func = torch.optim.Adam
+    optimizer_func: Type[torch.optim.Optimizer] = torch.optim.Adam
     loss_fn = nn.BCELoss()
     train_test_split_ratio = 0.8
     stop_train_key = 'ctrl+q'
+    auto_save_best: bool = True
 
     __stop_event: Event = field(default_factory=lambda: Event())
 
-    def train_and_save(self, auto_save_best: bool = True):
+    def train_existing_and_save(self):
+        self.model.load_state_dict(torch.load(self.model_save_path))
+        self.train_and_save()
+
+    def train_and_save(self):
         self.start_tensor_board()
-        if auto_save_best:
-            self.train(auto_save_best=True)
-        else:
-            self.train(auto_save_best=False)
+        self.train()
+        if not self.auto_save_best:
             self.save_model()
 
-    def train(self, auto_save_best: bool = True):
+    def train(self):
         model = self.model.to(self.device)
-        # split data to train&test
-        if isinstance(self.dataset, Sized):
-            data_len = len(self.dataset)
-        else:
-            data_len = sum((1 for _ in self.dataset))
-        train_data_size = round(data_len * self.train_test_split_ratio)
-        test_data_size = data_len - train_data_size
-        train_dataset, test_dataset = torch.utils.data.random_split(self.dataset, [train_data_size, test_data_size])
+
+        train_dataset, test_dataset = self.__split_dataset_to_train_and_test()
         train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
         # tensorboard summary writer
-        summarizer = Summarizer(
-            SummaryWriter(
-                os.path.join(self.train_log_dir, self.train_name + "-" + datetime.now().strftime('%Y%m%d-%H-%M-%S'))))
-        summarizer.add_graph(model, next(iter(train_loader))[0])
+        self.tensor_board_summarizer.add_graph(model, next(iter(train_loader))[0])
 
         # stop event listening setup
         keyboard.add_hotkey(self.stop_train_key, self.stop_training)
@@ -105,7 +72,7 @@ class Trainer:
                 loss.backward()
                 optimizer.step()
 
-                summarizer.add_train_loss(loss)
+                self.tensor_board_summarizer.add_train_loss(loss)
 
             model.eval()
             with torch.no_grad():
@@ -113,8 +80,8 @@ class Trainer:
                 for X, y in DataLoader(test_dataset):
                     test_loss_sum += self.loss_fn(model(X), y)
                 mean_loss = test_loss_sum / len(test_dataset)
-                summarizer.add_test_loss(mean_loss)
-                if auto_save_best and mean_loss < cur_min_loss:
+                self.tensor_board_summarizer.add_test_loss(mean_loss)
+                if self.auto_save_best and mean_loss < cur_min_loss:
                     self.save_model()
 
     def start_tensor_board(self):
@@ -129,3 +96,13 @@ class Trainer:
 
     def save_model(self):
         torch.save(self.model.state_dict(), self.model_save_path)
+
+    def __split_dataset_to_train_and_test(self):
+        # split data to train&test
+        if isinstance(self.dataset, Sized):
+            data_len = len(self.dataset)
+        else:
+            data_len = sum((1 for _ in self.dataset))
+        train_data_size = round(data_len * self.train_test_split_ratio)
+        test_data_size = data_len - train_data_size
+        return torch.utils.data.random_split(self.dataset, [train_data_size, test_data_size])

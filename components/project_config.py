@@ -13,6 +13,7 @@ from components.utils.dataset import VideoKeyboardDataset
 from components.utils.image_format import ImageFormat
 from components.utils.key_transformer import KeyTransformer
 from components.utils.screen_streamer import ScreenStreamer
+from components.utils.tensor_board_summarizer import Summarizer
 from components.utils.window_region import WindowRegion
 
 
@@ -61,6 +62,7 @@ class ProjectConfig:
             model=self._provide_raw_model(),
             model_save_path=self.model_path,
             train_log_dir=self.train_log_dir,
+            tensor_board_summarizer=Summarizer(self.train_log_dir, self.train_name)
         )
 
     def provide_ai_applier(self) -> GameAiApplier:
