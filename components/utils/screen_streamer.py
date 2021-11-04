@@ -2,9 +2,9 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import List, Callable
 
-import numpy as np
-from cv2 import cv2
+from cv2.cv2 import cvtColor, COLOR_RGBA2RGB
 from mss import mss
+from numpy import array, ndarray
 from ratelimit import sleep_and_retry, rate_limited
 from rich.progress import Progress
 
@@ -16,10 +16,10 @@ from components.utils.window_region import WindowRegion
 class ScreenStreamer:
     output_img_format: ImageFormat
     max_fps: int = 30
-    recording_img_transform_func: Callable[[np.ndarray], np.ndarray] = None
+    recording_img_transform_func: Callable[[ndarray], ndarray] = None
     record_window_region: WindowRegion = field(default_factory=lambda: WindowRegion.from_first_monitor())
 
-    def stream(self, stop_event, progress_bar: Progress = None) -> List[np.ndarray]:
+    def stream(self, stop_event, progress_bar: Progress = None) -> List[ndarray]:
         """
         starts streaming images, which stops only when stop_event is triggered.
         :return: stream of images as np array, with shape (screen_res[1], screen_res[0], 3)
@@ -38,7 +38,7 @@ class ScreenStreamer:
         @rate_limited(1, 1 / self.max_fps)
         def capture():
             # noinspection PyTypeChecker
-            raw_img = np.array(screen_grabber.grab(bounding_box))
+            raw_img = array(screen_grabber.grab(bounding_box))
             # capture screen, then down-sample + trim the sides to meet specified resolution. output color is RGBA.
             zoomed_img = raw_img[h_start:h_end:down_sample_factor, w_start:w_end:down_sample_factor]
             if self.recording_img_transform_func:
@@ -51,7 +51,7 @@ class ScreenStreamer:
         task_id = progress_bar.add_task('recording', fps=0) if progress_bar else None
         while not stop_event.is_set():
             img = capture()
-            yield cv2.cvtColor(img, cv2.COLOR_RGBA2RGB)
+            yield cvtColor(img, COLOR_RGBA2RGB)
             if progress_bar is not None:
                 timestamp = datetime.now().timestamp()
                 progress_bar.update(task_id, fps=f'{round(1 / (timestamp - last_timestamp), 1)} frame per sec')

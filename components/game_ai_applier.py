@@ -6,7 +6,9 @@ from threading import Event
 import keyboard
 import numpy as np
 import torch
+from keyboard import press, release
 from rich.progress import Progress
+from torch import reshape
 
 from components.utils.key_transformer import KeyTransformer
 from components.utils.screen_streamer import ScreenStreamer
@@ -30,22 +32,22 @@ class GameAiApplier:
         keyboard.wait(self.start_apply_hotkey)
         print(f'Press {self.stop_apply_hotkey} to stop.')
 
-        last_timestamp = datetime.now().timestamp()
         with Progress('Prediction: fps: {task.fields[fps]} keys: {task.fields[keys]}') as progress:
             with torch.no_grad():
                 self.trained_model.eval()
                 task = progress.add_task('', fps=None, keys=[])
                 cur_keys = set()
+                last_timestamp = datetime.now().timestamp()
                 for img in self.screen_streamer.stream(self.__stop_event):
                     img = self.screen_to_tensor_func(img)
-                    pred = self.trained_model(torch.reshape(img, (1,) + img.shape))[0]
+                    pred = self.trained_model(reshape(img, (1,) + img.shape))[0]
                     keys = set(self.key_transformer.pred_to_keys(pred))
                     to_press = keys - cur_keys
                     to_release = cur_keys - keys
                     for key in to_press:
-                        keyboard.press(key)
+                        press(key)
                     for key in to_release:
-                        keyboard.release(key)
+                        release(key)
                     cur_keys = keys
                     timestamp = datetime.now().timestamp()
                     fps = round(1 / (timestamp - last_timestamp), 1)
