@@ -29,6 +29,7 @@ class Trainer:
     train_test_split_ratio = 0.8
     stop_train_key = 'ctrl+q'
     auto_save_best: bool = True
+    auto_stop_after_n_epoch_no_improve: int = 10
 
     __stop_event: Event = field(default_factory=lambda: Event())
 
@@ -58,9 +59,13 @@ class Trainer:
         optimizer = self.optimizer_func(model.parameters(), lr=self.learning_rate)
 
         cur_min_loss = 23 * 10 ** 8
+        last_improved_epoch = 0
         for epoch in range(self.epochs):
             time.sleep(0.1)  # leave a bit time for keyboard event loop to react
             if self.__stop_event.is_set():
+                break
+            if epoch - last_improved_epoch > self.auto_stop_after_n_epoch_no_improve:
+                print(f"No improvement is seen since epoch {last_improved_epoch}, stop training automatically.")
                 break
 
             model.train(mode=True)
@@ -81,8 +86,10 @@ class Trainer:
                     test_loss_sum += self.loss_fn(model(X), y)
                 mean_loss = test_loss_sum / len(test_dataset)
                 self.tensor_board_summarizer.add_test_loss(mean_loss)
-                if self.auto_save_best and mean_loss < cur_min_loss:
-                    self.save_model()
+                if mean_loss < cur_min_loss:
+                    last_improved_epoch = epoch
+                    if self.auto_save_best:
+                        self.save_model()
 
     def start_tensor_board(self):
         tb = program.TensorBoard()
