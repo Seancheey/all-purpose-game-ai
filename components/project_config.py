@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Callable
+from typing import List, Callable, Optional
 
 import numpy as np
 import torch
@@ -39,8 +39,10 @@ class ProjectConfig:
     train_name: str
     data_visualize_fps: int
     max_record_fps: int
+    device: str
     recording_image_filter_func: Callable[[np.ndarray], np.ndarray] = None
     screen_to_tensor_func: Callable[[np.ndarray], torch.Tensor] = torchvision.transforms.ToTensor()
+    screen_augmentation_func: Optional[Callable[[torch.Tensor], torch.Tensor]] = None
 
     def provide_recorder(self) -> RepeatingRecorder:
         return RepeatingRecorder(
@@ -62,7 +64,8 @@ class ProjectConfig:
             model=self._provide_raw_model(),
             model_save_path=self.model_path,
             train_log_dir=self.train_log_dir,
-            tensor_board_summarizer=Summarizer(self.train_log_dir, self.train_name)
+            tensor_board_summarizer=Summarizer(self.train_log_dir, self.train_name),
+            device=self.device
         )
 
     def provide_ai_applier(self) -> GameAiApplier:
@@ -92,7 +95,13 @@ class ProjectConfig:
         )
 
     def _provide_dataset(self) -> VideoKeyboardDataset:
-        return VideoKeyboardDataset(self.data_dir, self._provide_key_transformer(), self.screen_to_tensor_func)
+        return VideoKeyboardDataset(
+            self.data_dir,
+            self._provide_key_transformer(),
+            screen_to_tensor_func=self.screen_to_tensor_func,
+            screen_augmentation_func=self.screen_augmentation_func,
+            device=self.device
+        )
 
     def _provide_raw_model(self) -> torch.nn.Module:
         return self.model_class()

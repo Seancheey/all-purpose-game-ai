@@ -20,14 +20,14 @@ class Trainer:
     model_save_path: str
     train_log_dir: str
     tensor_board_summarizer: Summarizer
-    learning_rate = 0.001
-    batch_size = 200
-    epochs = 500
-    device = 'cuda'
+    device: str
+    learning_rate: float = 0.001
+    batch_size: int = 200
+    epochs: int = 500
     optimizer_func: Type[torch.optim.Optimizer] = torch.optim.Adam
     loss_fn = nn.BCELoss()
-    train_test_split_ratio = 0.8
-    stop_train_key = 'ctrl+q'
+    train_test_split_ratio: int = 0.8
+    stop_train_key: str = 'ctrl+q'
     auto_save_best: bool = True
     auto_stop_after_n_epoch_no_improve: int = 10
 

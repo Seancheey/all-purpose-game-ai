@@ -28,6 +28,7 @@ def linea_config(level):
         start_record_key='e',
         stop_record_key='q',
         data_visualize_fps=20,
+        device='cuda'
     )
 
 
@@ -50,7 +51,8 @@ super_hexagon_config = ProjectConfig(
     data_visualize_fps=30,
     screen_to_tensor_func=transforms.Compose([
         transforms.ToTensor(),
-        transforms.RandomRotation(180),
         transforms.Grayscale(),
-    ])
+    ]),
+    screen_augmentation_func=transforms.RandomRotation(20),
+    device='cuda'
 )

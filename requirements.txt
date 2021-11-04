@@ -16,3 +16,4 @@ torch
 torchvision
 torchsummary
 pywin32
+tqdm
