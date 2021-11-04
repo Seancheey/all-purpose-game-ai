@@ -3,10 +3,10 @@ import os
 from torchvision import transforms
 
 from helper.data_format import ImageFormat
-from helper.model import PlayModel
 from helper.project_config import ProjectConfig
 from helper.window_region import WindowRegion
 from model.hexagon_model import SuperHexagonModel
+from model.linea_model import LineaModel
 
 
 def linea_config(level):
@@ -19,7 +19,7 @@ def linea_config(level):
         train_name='batch-norm-train',
         record_window_region_func=WindowRegion.from_first_monitor,
         model_path=os.path.join(folder, 'model.pth'),
-        model_class=lambda: PlayModel(num_outputs=4),
+        model_class=LineaModel,
         max_record_fps=60,
         stop_train_key='ctrl+q',
         save_record_key='space',

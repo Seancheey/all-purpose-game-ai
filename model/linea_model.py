@@ -5,9 +5,9 @@ from torchsummary import summary
 from helper.data_format import ImageFormat
 
 
-class PlayModel(nn.Module):
-    def __init__(self, num_outputs: int):
-        super(PlayModel, self).__init__()
+class LineaModel(nn.Module):
+    def __init__(self, num_outputs: int = 4):
+        super(LineaModel, self).__init__()
         self.cnn_stack = nn.Sequential(
             nn.Conv2d(3, 16, kernel_size=(8, 8), stride=(2, 2), padding=2),
             nn.MaxPool2d(kernel_size=(2, 2)),
@@ -44,7 +44,7 @@ class PlayModel(nn.Module):
 
 
 if __name__ == '__main__':
-    model = PlayModel(num_outputs=4).to('cuda')
+    model = LineaModel(num_outputs=4).to('cuda')
     img_size = ImageFormat(width=192, height=108, channel=3)
     summary(model, img_size.tensor_shape(), batch_size=64)
     test = torch.rand(100, *img_size.tensor_shape(), device='cuda')
