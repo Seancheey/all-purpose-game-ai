@@ -60,7 +60,7 @@ class VideoKeyboardDataset(Dataset):
 
     def __over_sample_to_balance_labels(self, screen_dataset, key_dataset):
         print("before resample:")
-        self.summarize_keys_distribution(self.keys)
+        self.summarize_keys_distribution(key_dataset)
         print(f"over sample unbalanced dataset. original size: {len(screen_dataset)} ", end='')
         # sampler doesn't support multi-label input, so transform keys to ordinal encoding first
         key_dataset = np.fromiter((self.key_transformer.directions_to_ordinal(d) for d in key_dataset), np.int8)
@@ -75,7 +75,7 @@ class VideoKeyboardDataset(Dataset):
         key_dataset = np.stack([self.key_transformer.ordinal_to_directions(o) for o in key_dataset])
         print(f"new size: {len(screen_dataset)}")
         print("after resample:")
-        self.summarize_keys_distribution(self.keys)
+        self.summarize_keys_distribution(key_dataset)
         return screen_dataset, key_dataset
 
     def summarize_keys_distribution(self, keys: np.ndarray):
