@@ -39,7 +39,7 @@ super_hexagon_config = ProjectConfig(
     img_format=ImageFormat(width=256, height=256, channel=1),
     data_dir=os.path.join(os.getcwd(), 'super_hexagon', 'data'),
     train_log_dir=os.path.join(os.getcwd(), 'super_hexagon', 'runs'),
-    train_name='big-batch-train',
+    train_name='random-augmentation-with-oversample',
     record_window_region_func=lambda: WindowRegion.from_window_with_name('Super Hexagon').scale_size(0.95),
     model_path=os.path.join(os.getcwd(), 'super_hexagon', 'model.pth'),
     model_class=SuperHexagonModel,
@@ -55,6 +55,13 @@ super_hexagon_config = ProjectConfig(
         transforms.ToTensor(),
         transforms.Grayscale(),
     ]),
-    screen_augmentation_func=lambda img: torchvision.transforms.functional.rotate(img, randint(0, 3) * 90),
-    device='cuda'
+    screen_augmentation_func=transforms.Compose([
+        lambda img: torchvision.transforms.functional.rotate(img, randint(0, 3) * 90),
+        lambda img: img if randint(0, 1) == 0 else 1 - img,
+        transforms.RandomRotation(10),
+        transforms.RandomPerspective(0.1),
+        transforms.ColorJitter(brightness=0.2, saturation=0.2, contrast=0.2)
+    ]),
+    device='cuda',
+    oversample_to_balance_labels=True,
 )
