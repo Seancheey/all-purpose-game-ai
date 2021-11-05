@@ -87,6 +87,7 @@ class Trainer:
                 mean_loss = test_loss_sum / len(test_dataset)
                 self.tensor_board_summarizer.add_test_loss(mean_loss)
                 if mean_loss < cur_min_loss:
+                    cur_min_loss = mean_loss
                     last_improved_epoch = epoch
                     if self.auto_save_best:
                         self.save_model()
