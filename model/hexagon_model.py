@@ -10,7 +10,7 @@ class SuperHexagonModel(nn.Module):
             nn.Linear(num_input, num_output),
             nn.BatchNorm1d(num_output),
             nn.GELU(),
-            nn.Dropout(p=0.5),
+            nn.Dropout(p=0.4),
         )
 
     @staticmethod
@@ -25,14 +25,14 @@ class SuperHexagonModel(nn.Module):
     def __init__(self):
         super(SuperHexagonModel, self).__init__()
         self.cnn_stack = nn.Sequential(
-            SuperHexagonModel.conv_block(1, 8, kernel_size=(8, 8), stride=(2, 2), padding=2),
-            SuperHexagonModel.conv_block(8, 16, kernel_size=(3, 3), padding=1),
-            SuperHexagonModel.conv_block(16, 32, kernel_size=(3, 3), padding=1),
+            SuperHexagonModel.conv_block(1, 8, kernel_size=(9, 9), stride=(2, 2), padding=4),
+            SuperHexagonModel.conv_block(8, 16, kernel_size=(7, 7), padding=3),
+            SuperHexagonModel.conv_block(16, 32, kernel_size=(5, 5), padding=2),
             SuperHexagonModel.conv_block(32, 64, kernel_size=(3, 3), padding=1),
             SuperHexagonModel.conv_block(64, 128, kernel_size=(3, 3), padding=1),
         )
         self.ann_stack = nn.Sequential(
-            SuperHexagonModel.fc_block(1152, 1024),
+            SuperHexagonModel.fc_block(2048, 1024),
             SuperHexagonModel.fc_block(1024, 1024),
             SuperHexagonModel.fc_block(1024, 1024)
         )
