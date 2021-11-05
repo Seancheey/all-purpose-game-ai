@@ -33,13 +33,13 @@ class Summarizer:
         else:
             self.__train_loss_loop_i = 1
             self.__writer.add_scalar('train loss (by step)', loss, self.__train_loss_step)
-            self.__writer.add_scalar('train loss (by time)', loss, self.minute_from_start())
+            self.__writer.add_scalar('train loss (by time)', loss, self.seconds_from_start())
         self.__train_loss_step += 1
 
     def add_test_loss(self, loss):
         self.__writer.add_scalar('test loss (by step)', loss, self.__test_loss_step)
-        self.__writer.add_scalar('test loss (by time)', loss, self.minute_from_start())
+        self.__writer.add_scalar('test loss (by time)', loss, self.seconds_from_start())
         self.__test_loss_step += 1
 
-    def minute_from_start(self):
-        return round((datetime.now().timestamp() - self.__start_timestamp) / 60)
+    def seconds_from_start(self):
+        return round(datetime.now().timestamp() - self.__start_timestamp)
