@@ -1,5 +1,5 @@
 import os
-from collections import Callable
+from collections import Callable, defaultdict
 from dataclasses import dataclass
 from typing import Optional
 
@@ -26,6 +26,7 @@ class VideoKeyboardDataset(Dataset):
     screen_to_tensor_func: Callable[[np.ndarray], torch.Tensor] = torchvision.transforms.ToTensor()
     screen_augmentation_func: Optional[Callable[[torch.Tensor], torch.Tensor]] = None
     load_to_device_at_init: bool = False
+    oversample_to_balance_labels: bool = False
     seed: int = 0
 
     def __post_init__(self):
@@ -40,7 +41,11 @@ class VideoKeyboardDataset(Dataset):
         self.keys = np.concatenate(keys_list, dtype=float)
         assert len(self.screens) == len(self.keys), "screen size and key size is not matching"
 
-        self.screens, self.keys = self.__over_sample_to_balance_labels(self.screens, self.keys)
+        if self.oversample_to_balance_labels:
+            self.screens, self.keys = self.__over_sample_to_balance_labels(self.screens, self.keys)
+        else:
+            print('data distribution:')
+            self.summarize_keys_distribution(self.keys)
 
         print("convert to tensors")
         self.screens = list(
@@ -54,6 +59,8 @@ class VideoKeyboardDataset(Dataset):
             self.keys = self.keys.to(device=self.device)
 
     def __over_sample_to_balance_labels(self, screen_dataset, key_dataset):
+        print("before resample:")
+        self.summarize_keys_distribution(self.keys)
         print(f"over sample unbalanced dataset. original size: {len(screen_dataset)} ", end='')
         # sampler doesn't support multi-label input, so transform keys to ordinal encoding first
         key_dataset = np.fromiter((self.key_transformer.directions_to_ordinal(d) for d in key_dataset), np.int8)
@@ -67,7 +74,15 @@ class VideoKeyboardDataset(Dataset):
         screen_dataset = screen_dataset.reshape((-1,) + screen_shape)
         key_dataset = np.stack([self.key_transformer.ordinal_to_directions(o) for o in key_dataset])
         print(f"new size: {len(screen_dataset)}")
+        print("after resample:")
+        self.summarize_keys_distribution(self.keys)
         return screen_dataset, key_dataset
+
+    def summarize_keys_distribution(self, keys: np.ndarray):
+        counts = defaultdict(int)
+        for directions in keys:
+            counts['+'.join(self.key_transformer.directions_to_keys(directions))] += 1
+        print('\n'.join(f'\'{key:>3}\': {count}' for key, count in counts.items()))
 
     def __len__(self):
         return len(self.screens)
