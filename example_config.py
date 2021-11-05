@@ -1,5 +1,7 @@
 import os
+from random import randint
 
+import torchvision.transforms.functional
 from torchvision import transforms
 
 from components.project_config import ProjectConfig
@@ -37,8 +39,8 @@ super_hexagon_config = ProjectConfig(
     img_format=ImageFormat(width=256, height=256, channel=1),
     data_dir=os.path.join(os.getcwd(), 'super_hexagon', 'data'),
     train_log_dir=os.path.join(os.getcwd(), 'super_hexagon', 'runs'),
-    train_name='cnn-batch-norm-train',
-    record_window_region_func=lambda: WindowRegion.from_window_with_name('Super Hexagon').scale_size(0.85),
+    train_name='big-batch-train',
+    record_window_region_func=lambda: WindowRegion.from_window_with_name('Super Hexagon').scale_size(0.95),
     model_path=os.path.join(os.getcwd(), 'super_hexagon', 'model.pth'),
     model_class=SuperHexagonModel,
     max_record_fps=60,
@@ -53,6 +55,6 @@ super_hexagon_config = ProjectConfig(
         transforms.ToTensor(),
         transforms.Grayscale(),
     ]),
-    screen_augmentation_func=transforms.RandomRotation(20),
+    screen_augmentation_func=lambda img: torchvision.transforms.functional.rotate(img, randint(0, 3) * 90),
     device='cuda'
 )
