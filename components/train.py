@@ -22,7 +22,7 @@ class Trainer:
     tensor_board_summarizer: Summarizer
     device: str
     learning_rate: float = 0.001
-    batch_size: int = 200
+    batch_size: int = 512
     epochs: int = 500
     optimizer_func: Type[torch.optim.Optimizer] = torch.optim.Adam
     loss_fn = nn.BCELoss()
