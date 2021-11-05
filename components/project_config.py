@@ -40,6 +40,7 @@ class ProjectConfig:
     data_visualize_fps: int
     max_record_fps: int
     device: str
+    oversample_to_balance_labels: bool = False
     recording_image_filter_func: Callable[[np.ndarray], np.ndarray] = None
     screen_to_tensor_func: Callable[[np.ndarray], torch.Tensor] = torchvision.transforms.ToTensor()
     screen_augmentation_func: Optional[Callable[[torch.Tensor], torch.Tensor]] = None
@@ -100,7 +101,8 @@ class ProjectConfig:
             self._provide_key_transformer(),
             screen_to_tensor_func=self.screen_to_tensor_func,
             screen_augmentation_func=self.screen_augmentation_func,
-            device=self.device
+            device=self.device,
+            oversample_to_balance_labels=self.oversample_to_balance_labels
         )
 
     def _provide_raw_model(self) -> torch.nn.Module:
