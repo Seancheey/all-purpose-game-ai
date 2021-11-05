@@ -6,7 +6,7 @@ from typing import Optional
 import numpy as np
 import torch
 import torchvision.transforms
-from imblearn.under_sampling import RandomUnderSampler
+from imblearn.over_sampling import RandomOverSampler
 from torch.utils.data import Dataset
 from torch.utils.data.dataset import T_co
 from tqdm import tqdm
@@ -17,12 +17,15 @@ from components.utils.key_transformer import KeyTransformer
 
 @dataclass
 class VideoKeyboardDataset(Dataset):
+    """
+    Dataset class that loads N folders of screen and keyboard data, then convert them to tensors for pytorch trainer.
+    """
     data_dir: str
     key_transformer: KeyTransformer
     device: str
     screen_to_tensor_func: Callable[[np.ndarray], torch.Tensor] = torchvision.transforms.ToTensor()
     screen_augmentation_func: Optional[Callable[[torch.Tensor], torch.Tensor]] = None
-    load_to_device_at_init: bool = True
+    load_to_device_at_init: bool = False
     seed: int = 0
 
     def __post_init__(self):
@@ -58,8 +61,7 @@ class VideoKeyboardDataset(Dataset):
         screen_shape = screen_dataset.shape[1:]
         screen_dataset = screen_dataset.reshape((len(screen_dataset), -1))
 
-        # sm = RandomOverSampler(random_state=self.seed)
-        sm = RandomUnderSampler(random_state=self.seed)
+        sm = RandomOverSampler(random_state=self.seed)
         screen_dataset, key_dataset = sm.fit_resample(screen_dataset, key_dataset)
 
         screen_dataset = screen_dataset.reshape((-1,) + screen_shape)
