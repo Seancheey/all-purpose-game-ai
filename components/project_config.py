@@ -44,6 +44,7 @@ class ProjectConfig:
     recording_image_filter_func: Callable[[np.ndarray], np.ndarray] = None
     screen_to_tensor_func: Callable[[np.ndarray], torch.Tensor] = torchvision.transforms.ToTensor()
     screen_augmentation_func: Optional[Callable[[torch.Tensor], torch.Tensor]] = None
+    auto_stop_after_n_epoch_no_improve: int = 20
 
     def provide_recorder(self) -> RepeatingRecorder:
         return RepeatingRecorder(
@@ -66,7 +67,8 @@ class ProjectConfig:
             model_save_path=self.model_path,
             train_log_dir=self.train_log_dir,
             tensor_board_summarizer=Summarizer(self.train_log_dir, self.train_name),
-            device=self.device
+            device=self.device,
+            auto_stop_after_n_epoch_no_improve=self.auto_stop_after_n_epoch_no_improve
         )
 
     def provide_ai_applier(self) -> GameAiApplier:

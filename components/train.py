@@ -29,7 +29,7 @@ class Trainer:
     train_test_split_ratio: int = 0.8
     stop_train_key: str = 'ctrl+q'
     auto_save_best: bool = True
-    auto_stop_after_n_epoch_no_improve: int = 10
+    auto_stop_after_n_epoch_no_improve: int = 20
 
     __stop_event: Event = field(default_factory=lambda: Event())
 
